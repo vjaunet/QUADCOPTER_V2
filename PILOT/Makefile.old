@@ -1,0 +1,20 @@
+all: quad_pilot
+
+HDRS = helper_3dmath.h I2Cdev.h MPU6050_6Axis_MotionApps20.h MPU6050.h net.h\
+global.h servo.h pid.h dmp.h
+CMN_OBJS = I2Cdev.o MPU6050.o servo.o pid.o dmp.o
+DMP_OBJS = main.o
+
+# Set DMP FIFO rate to 20Hz to avoid overflows on 3d demo.  See comments in
+# MPU6050_6Axis_MotionApps20.h for details.
+# F = 200/(DDMP_FIFO_RATE + 1)
+
+CXXFLAGS = -DDMP_FIFO_RATE=4 -Wall -g -O2
+
+$(CMN_OBJS) $(DMP_OBJS) : $(HDRS)
+
+quad_pilot: $(CMN_OBJS) $(DMP_OBJS)
+	$(CXX) -o $@ $^ -lm
+
+clean:
+	rm -f $(CMN_OBJS) $(DMP_OBJS) quad_pilot *~

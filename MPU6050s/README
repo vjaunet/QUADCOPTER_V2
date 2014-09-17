@@ -1,0 +1,29 @@
+>This code is mostly
+>
+>Copyright (c) 2012 Jeff Rowberg, and copied from
+>
+>    https://github.com/jrowberg/i2cdevlib
+>
+>I have simply hacked it to work with the RaspberryPi, using the in-kernel
+>I2C drivers.  It should be trival to make use of any of the other sensors
+>Jeff supports in this way.
+>
+>Note the DMP FIFO rate has been set to 20Hz in the Makefile; it is 100Hz in the
+>original code, but that was a bit fast for the 3d demo.  See the comments in
+>MPU6050_6Axis_MotionApps20.h file to change the rate.
+>
+>Richard Hirst <richardghirst@gmai.com>   06 Nov 2012
+
+#############################################################################
+
+mpu6050_dmp.cpp contains routine to set-up, initialize and obtain Yaw, Pitch,
+Raw angles from an MPU6050.
+
+setup()
+MPU_init()
+MPU_setup()        (combination of both former ones)
+MPU_getYPR(ypr[3]) (returns Y P R angles ina table)
+
+It is mostly a wrapper to Richard Hisrt's job.
+
+Vincent Jaunet <vicnent.jaunet@hotmail.fr> 21 Sept 2013
