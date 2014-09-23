@@ -17,12 +17,6 @@
 #define PITCH_IN_PIN 10
 #define ROLL_IN_PIN 11
 
-// Assign your channel out pins
-#define FL_MOTOR_OUT_PIN 4
-#define FR_MOTOR_OUT_PIN 5
-#define BL_MOTOR_OUT_PIN 6
-#define BR_MOTOR_OUT_PIN 7
-
 //Define I2C variables
 #define SLAVE_ADDRESS 0x04
 
@@ -30,20 +24,13 @@
 #define LED_PIN 13
 
 //For RC inputs Scaling
-#define RC_MIN 1084
-#define RC_MAX 1896
-#define K_YAW 30.
+#define THR_MIN 890
+#define THR_MAX 1895
+#define RC_MIN 1000
+#define RC_MAX 2000
+#define K_YAW 30
 #define K_PITCH 20
 #define K_ROLL 20
-
-
-// Servo objects generate the signals expected by Electronic Speed Controllers and Servos
-// We will use the objects to output the signals we read in
-// this example code provides a straight pass through of the signal with no custom processing
-Servo FL_MOTOR;
-Servo FR_MOTOR;
-Servo BL_MOTOR;
-Servo BR_MOTOR;
 
 // These bit flags are set in bUpdateFlagsShared to indicate which
 // channels have new signals
@@ -81,15 +68,6 @@ void setup()
 
   pinMode(LED_PIN, OUTPUT);
 
-  // attach servo objects, these will generate the correct 
-  // pulses for driving Electronic speed controllers, servos or other devices
-  // designed to interface directly with RC Receivers  
-  FL_MOTOR.attach(FL_MOTOR_OUT_PIN);
-  FR_MOTOR.attach(FR_MOTOR_OUT_PIN);
-  BL_MOTOR.attach(BL_MOTOR_OUT_PIN);
-  BR_MOTOR.attach(BR_MOTOR_OUT_PIN);
-
-
   // using the PinChangeInt library, attach the interrupts
   // used to read the channels
   PCintPort::attachInterrupt(THROTTLE_IN_PIN, calcThrottle,CHANGE); 
@@ -100,7 +78,6 @@ void setup()
   // initialize i2c as slave
   // define call backs ofr I2C
   Wire.begin(SLAVE_ADDRESS);
-  Wire.onReceive(SetServos);
   Wire.onRequest(SendRemote);
 
 }
@@ -174,14 +151,24 @@ void SendRemote()
   union Sharedblock
   {
     byte b[4]; // utiliser char parts[4] pour port série
-    double d;
+    float d;
   } RCsignal[4];
 
-  RCsignal[0].d=(double)(unThrottleInShared-RC_MIN)/(RC_MAX-RC_MIN) * 100.0;
-  RCsignal[1].d=(double) (unYawInShared-RC_MIN)/(RC_MAX-RC_MIN) * K_YAW;
-  RCsignal[2].d=(double) (unPitchInShared-RC_MIN)/(RC_MAX-RC_MIN) * K_PITCH;
-  RCsignal[3].d=(double) (unRollInShared-RC_MIN)/(RC_MAX-RC_MIN) * K_ROLL;
+  RCsignal[0].d=
+    (float) (unThrottleInShared-THR_MIN)/
+    (THR_MAX-THR_MIN) * 100.0;
+  RCsignal[1].d=
+     ((float) unYawInShared-(RC_MAX+RC_MIN)/2)/
+    (RC_MAX-RC_MIN) * K_YAW;
+  RCsignal[2].d=
+     ((float) unPitchInShared-(RC_MAX+RC_MIN)/2)/
+    (RC_MAX-RC_MIN) * K_PITCH;
+  RCsignal[3].d=
+     ((float) unRollInShared-(RC_MAX+RC_MIN)/2)/
+    (RC_MAX-RC_MIN) * K_ROLL;
   
+
+
   byte data[16];
   for (int i=0;i<4;i++)
     {
@@ -190,17 +177,10 @@ void SendRemote()
 	data[ii+4*i] = RCsignal[i].b[ii];
       }
     }
-
+ 
   Wire.write(data,16);
 
-  Serial.print("throttle =");
-  Serial.println(unThrottleInShared);
 }
-
-void SetServos(int byteCount)
-{
-}
-
 
 // simple interrupt service routine
 void calcThrottle()
