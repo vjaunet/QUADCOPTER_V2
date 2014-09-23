@@ -14,9 +14,12 @@ private:
 
 public:
   I2C(uint8_t address);
-  void sendDouble(double send_data);
-  int  readFloat(float &read_data);
-  int  readFloats(float read_data[],int num);
+  int sendInt(int data);
+  int sendBytes(uint8_t data[], uint8_t length);
+  int readFloat(float &read_data);
+
+  //Specifically made for the quadcopter
+  int readRCinputs(float read_data[]);
 
 };
 
