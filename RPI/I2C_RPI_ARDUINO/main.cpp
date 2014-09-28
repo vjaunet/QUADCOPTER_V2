@@ -29,18 +29,18 @@ int main(int argc, char** argv) {
     printf("throttle = %4.2f, yaw = %4.2f, pitch = %4.2f , roll = %4.2f \n",
     	   RC[0], RC[1], RC[2], RC[3]);
 
-    //    usleep(100000);
+     usleep(1000000);
 
     //--------------------------------------
     //send ESC values
     for (int i=0;i<4;i++){
-      ESC[i] = (int) RC[i] + 1500;
+      ESC[i] = (int) RC[i]*10 + 1000;
     }
 
    count = I2CtoArduino.sendESCs(ESC,4);
    printf("Send ESC count = %d \n", count);
 
-   usleep(100000);
+    usleep(1000000);
 
   }
   return (EXIT_SUCCESS);
