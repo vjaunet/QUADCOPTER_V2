@@ -20,6 +20,7 @@ public:
 
   //Specifically made for the quadcopter
   int readRCinputs(float read_data[]);
+  int sendESCs(int data[], int num);
 
 };
 

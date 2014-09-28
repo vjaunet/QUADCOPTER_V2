@@ -18,28 +18,29 @@ int main(int argc, char** argv) {
   I2C I2CtoArduino(ADDRESS);
 
   float RC[4];
+  int ESC[4];
   while (true) {
+
+    int count;
+
+    //--------------------------------------
     //get RC
-    int count = I2CtoArduino.readRCinputs(RC);
-    printf("throttle = %f, yaw = %f, pitch = %f , roll = %f \n",
+    count = I2CtoArduino.readRCinputs(RC);
+    printf("throttle = %4.2f, yaw = %4.2f, pitch = %4.2f , roll = %4.2f \n",
     	   RC[0], RC[1], RC[2], RC[3]);
 
-    usleep(100000);
+    //    usleep(100000);
 
+    //--------------------------------------
     //send ESC values
-    int ESC = 1200;
-    union Sharedblock
-    {
-      uint8_t b[2];
-      int i;
-    } data;
+    for (int i=0;i<4;i++){
+      ESC[i] = (int) RC[i] + 1500;
+    }
 
-    data.i = ESC;
+   count = I2CtoArduino.sendESCs(ESC,4);
+   printf("Send ESC count = %d \n", count);
 
-    //I2CtoArduino.sendBytes(data.b,2);
-    //I2CtoArduino.sendInt(ESC);
-
-    //usleep(10000);
+   usleep(100000);
 
   }
   return (EXIT_SUCCESS);

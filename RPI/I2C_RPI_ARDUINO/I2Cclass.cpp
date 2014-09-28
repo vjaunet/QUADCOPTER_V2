@@ -116,6 +116,11 @@ int I2C::readFloat(float &read_data)
 }
 
 
+/*_________________________
+  for Quadcopter
+
+___________________________*/
+
 int I2C::readRCinputs(float read_data[])
 {
 
@@ -165,12 +170,34 @@ int I2C::readRCinputs(float read_data[])
     read_data[i] =  data[i].f;
     }
 
-    printf("throttle = %f, yaw = %f, pitch = %f , roll = %f \n",
-	   read_data[0], read_data[1],
-	   read_data[2], read_data[3]);
-
-
   return count;
 }
 
 
+int I2C::sendESCs(int data[], int num)
+{
+
+  //convert int to bytes[2]
+  //declare array of unions and fill up
+  union int_byt
+  {
+    uint8_t b[2];
+    int i;
+  } *data2 = new int_byt[num];
+  for (int i=0; i<num; i++)
+    {
+      data2[i].i = data[i];
+    }
+
+  //convert to table of bytes
+  uint8_t *buf = new uint8_t[2*num];
+  for (int i=0; i<num; i++)
+    {
+      for (int ib=0; ib<2; ib++)
+	{
+	  buf[2*i+ib] = data2[i].b[ib];
+	}
+    }
+
+  return sendBytes(buf, (uint8_t) 2*num);
+}
