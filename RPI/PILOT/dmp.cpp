@@ -127,7 +127,12 @@ void DMP::initialize(){
 
   printf("Initializing IMU...\n");
 
-  for (int n=1;n<3500;n++) {
+  //for (int n=1;n<3500;n++)
+  float yaw_old = 360;
+  int n=0;
+  while (fabs(ypr[YAW]-yaw_old) > 0.0005/180.*M_PI
+	 && n<50)
+    {
 
     // wait for FIFO count > 42 bits
     do {
@@ -142,6 +147,10 @@ void DMP::initialize(){
       // otherwise, check for DMP data ready interrupt
       //(this should happen frequently)
     } else {
+
+      //save old yaw value
+      yaw_old = ypr[YAW];
+
       //read packet from fifo
       mpu.getFIFOBytes(fifoBuffer, packetSize);
 
@@ -149,10 +158,11 @@ void DMP::initialize(){
       mpu.dmpGetGravity(&gravity, &q);
       mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-       // printf("yaw = %f, pitch = %f, roll = %f\n",
-       // 	     ypr[YAW]*180/M_PI, ypr[PITCH]*180/M_PI,
-       // 	      ypr[ROLL]*180/M_PI);
+      printf("yaw = %f, pitch = %f, roll = %f\n",
+       	     ypr[YAW]*180/M_PI, ypr[PITCH]*180/M_PI,
+	     ypr[ROLL]*180/M_PI);
     }
+    n++;
   }
 
   for (int i=0;i<DIM;i++) m_ypr_off[i] = ypr[i];

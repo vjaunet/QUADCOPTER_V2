@@ -16,7 +16,7 @@
 
 #include "timer.h"
 
-#define PERIOD 2500000
+#define PERIOD 10000000
 #define YAW 0
 #define PITCH 1
 #define ROLL 2
@@ -107,7 +107,7 @@ void TimerClass::sig_handler_(int signum)
   pthread_mutex_lock(&TimerMutex_);
 
   //1-Get and Execute Command from remote
-  remote.exec_remoteCMD();
+  Arduino.readRCinputs(Timer.setpoints);
 
   //2- get attitude of the drone
   imu.getAttitude();
@@ -118,6 +118,7 @@ void TimerClass::sig_handler_(int signum)
 
   //3- Timer dt
   Timer.calcdt_();
+  //printf("dt : %f \n",Timer.dt);
 
   //4-1 Calculate PID on attitude
 
@@ -130,17 +131,17 @@ void TimerClass::sig_handler_(int signum)
   //Yaw is Rate PID only
   for (int i=1;i<DIM;i++){
     Timer.PIDout[i] =
-      yprSTAB[i].update_pid_std(Timer.ypr_setpoint[i],
+      yprSTAB[i].update_pid_std(Timer.setpoints[i+1],
   			    imu.ypr[i],
   			    Timer.dt);
   }
-  Timer.PIDout[0] = Timer.ypr_setpoint[0];
+  Timer.PIDout[0] = Timer.setpoints[1];
 
   // printf("PITCH: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[PITCH],
   // 	 imu.ypr[PITCH],
   // 	 Timer.PIDout[PITCH]);
 
-  // printf("ROLL: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[ROLL],
+  // printf("ROLL: %7.2f %7.2f %7.2f\n",Timer.setpoints[ROLL+1],
   // 	 imu.ypr[ROLL],
   // 	 Timer.PIDout[ROLL]);
 
@@ -148,20 +149,19 @@ void TimerClass::sig_handler_(int signum)
   for (int i=0;i<DIM;i++){
     Timer.PIDout[i] =
       yprRATE[i].update_pid_std(Timer.PIDout[i],
-  			    imu.gyro[i],
+				imu.gyro[i],
 				Timer.dt);
   }
 
-// printf("YAW: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[YAW],
-// 	 imu.gyro[YAW],
-// 	 Timer.PIDout[YAW]);
-
+  // printf("YAW: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[YAW],
+  // 	 imu.gyro[YAW],
+  // 	 Timer.PIDout[YAW]);
 
   // printf("PITCH: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[PITCH],
   // 	 imu.gyro[PITCH],
   // 	 Timer.PIDout[PITCH]);
 
-  // printf("ROLL:  %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[ROLL],
+  // printf("ROLL:  %7.2f %7.2f %7.2f\n",Timer.setpoints[ROLL+1],
   // 	 imu.gyro[ROLL],
   // 	 Timer.PIDout[ROLL]);
 
@@ -172,7 +172,7 @@ void TimerClass::sig_handler_(int signum)
   #ifdef PID_RATE
   for (int i=0;i<DIM;i++){
     Timer.PIDout[i] =
-      yprRATE[i].update_pid_std(Timer.ypr_setpoint[i],
+      yprRATE[i].update_pid_std(Timer.setpoints[i+1],
       			    imu.gyro[i],
       			    Timer.dt);
   }
@@ -181,12 +181,21 @@ void TimerClass::sig_handler_(int signum)
 
   //5- ESC update and compensate Timer
   //   if timer has not been stopped
-  if (Timer.started){
-    ESC.update(Timer.thr,Timer.PIDout);
-    //printf("%7.2f  %7.2f\n",Timer.thr,Timer.PIDout[ROLL]);
+  //  if (Timer.started){
+
+    //compute each new ESC value
+    Timer.servo[0] = (int)(Timer.setpoints[0]*10+1000
+    		     + Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
+    Timer.servo[1] = (int)(Timer.setpoints[0]*10+1000
+    		     - Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
+    Timer.servo[2] = (int)(Timer.setpoints[0]*10+1000
+    		     - Timer.PIDout[PITCH] - Timer.PIDout[YAW]);
+    Timer.servo[3] = (int)(Timer.setpoints[0]*10+1000
+    		     - Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
+    Arduino.sendESCs(Timer.servo,4);
 
     Timer.compensate_();
-  }
+    //}
 
   pthread_mutex_unlock(&TimerMutex_);
 }

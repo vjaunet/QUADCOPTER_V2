@@ -12,14 +12,14 @@ CC = g++
 LIBS= -lm -lrt #-llapack
 
 #option de debugage :
-OPT_Debug= -Wall -g -O2
+OPT_Debug= -O2 #-g -Wall
 
 # Set DMP FIFO rate to 20Hz to avoid overflows on 3d demo.  See comments in
 # MPU6050_6Axis_MotionApps20.h for details.
 # F = 200/(DDMP_FIFO_RATE + 1)
 #the program is not fast enough to read DMP at 200Hz => DDMP_FIFO_RATE = 1
 
-CXXFLAGS = -DDMP_FIFO_RATE=1
+CXXFLAGS = -DDMP_FIFO_RATE=2
 
 
 ALL:$(EXEC)

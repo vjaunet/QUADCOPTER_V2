@@ -8,8 +8,6 @@
   - Initialization of PID
   - Initialization of ESC
   - Initialization of MPU6050
-  - Initialization of Remote socket
-
 
   Copyright (c) <2014> <Vincent Jaunet>
 
@@ -40,18 +38,29 @@
 
 int main(int argc, char *argv[])
 {
-  printf("QuadCopter Pilot v0.1\n");
+  printf("QuadCopter Pilot v2.0\n");
   printf("----------------------\n");
   printf("\n");
 
-  //initializing Network communication
-  remote.create();
+
+  //initilization of PID constants
+  yprRATE[YAW].set_Kpid(3.5,0.1,0.1);
+  yprRATE[PITCH].set_Kpid(2.9,0.1,0.125);
+  yprRATE[ROLL].set_Kpid (2.9,0.1,0.125);
+  yprSTAB[PITCH].set_Kpid(3.3,0.035,0.04);
+  yprSTAB[ROLL].set_Kpid(3.3,0.035,0.04);
+
+  //setting up IMU
+  imu.set_com();
+  imu.initialize();
+
+  //Starting Timer
+  Timer.start();
 
   /* Waiting fo Start command */
   while (true){
 
-    remote.exec_remoteCMD();
-    usleep(2000);
+    usleep(20000);
 
   }//end
 
