@@ -20,7 +20,7 @@ sufficient abilites for the job.
 The Raspberry PI hosts:
 - PID controller
 - Communication with the MPU6050 through I2C.
-- Communication to Arduino Micro through I2C
+- Communication to Arduino Micro through SPI
 
 
 This project is greatly inspired and using source code from :
@@ -72,10 +72,3 @@ Arduino to Rpi through I2C:
 
 ESCs and RC Receiver on Arduino:
 -....
-
-
-
-
-
-
-
