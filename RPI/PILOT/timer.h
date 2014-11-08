@@ -14,8 +14,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "net.h"
-#include "servo.h"
+#include "I2Cclass.h"
 #include "pid.h"
 #include "dmp.h"
 
@@ -34,7 +33,7 @@ class TimerClass
   struct sigaction signalAction; //signal action handler struct
   bool started;
 
-  float thr, ypr_setpoint[3];
+  float  setpoints[4];
 
  private:
   static void sig_handler_(int signum);
@@ -52,6 +51,9 @@ class TimerClass
   //PID variables
   float kp_,ki_,kd_;
   float PIDout[3];
+
+  //ESC output variables
+  int servo[4];
 
 };
 

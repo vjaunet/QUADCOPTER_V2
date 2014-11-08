@@ -10,10 +10,12 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+
 #include <time.h>
-
 #include "global.h"
-
-#include "net.h"
+#include "timer.h"
+#include "pid.h"
+#include "I2Cclass.h"
+#include "dmp.h"
 
 #endif
