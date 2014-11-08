@@ -74,10 +74,10 @@ uint32_t ulRollStart;
 #define SERVO_NUM 4
 
 // Assign your channel out pins
-#define FL_MOTOR_OUT_PIN 4
-#define FR_MOTOR_OUT_PIN 5
-#define BL_MOTOR_OUT_PIN 6
-#define BR_MOTOR_OUT_PIN 7
+#define FL_MOTOR_OUT_PIN A0
+#define FR_MOTOR_OUT_PIN A1
+#define BL_MOTOR_OUT_PIN A2
+#define BR_MOTOR_OUT_PIN A3
 
 //define Servo variables
 Servo MOTOR[SERVO_NUM];
@@ -89,11 +89,11 @@ volatile union int_byt{
 } *rcv_data = new int_byt[SERVO_NUM];
 
 
-
+//setup function
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("multiChannels");
+  // Serial.println("multiChannels");
 
   pinMode(LED_PIN, OUTPUT);
 
@@ -115,9 +115,9 @@ void setup()
   //Set servo values to min
   for (int i=0;i<SERVO_NUM;i++)
     {
-      MOTOR[i].writeMicroseconds(RC_MIN);
+      rcv_data[i].i =RC_MIN;
+      MOTOR[i].writeMicroseconds(rcv_data[i].i);
     }
-
 
   // initialize i2c as slave
   // define call backs ofr I2C
@@ -129,15 +129,41 @@ void setup()
 
 void loop()
 {
-  // noInterrupts();
+  //nothing to do here
+}
 
-  //Update servo values
-  for (int i=0;i<SERVO_NUM;i++)
+//on Receive
+void SetServos(int byteCount)
+{
+
+// the RPI shoud send 4 x 1 uint16_t (2 bytes) values
+// one for each PID updated Motor speed
+
+  digitalWrite(LED_PIN,HIGH);
+  if (byteCount == 8)
     {
-      MOTOR[i].writeMicroseconds(rcv_data[i].i);
+
+      //Serial.println(Wire.available());
+
+      while(Wire.available()) {
+
+	for (int i=0;i<SERVO_NUM;i++)
+	  {
+	    rcv_data[i].b[0] = Wire.read(); //upper bits?
+	    rcv_data[i].b[1] = Wire.read(); //lower bits?
+	  }
+      }
+      //update servos
+      for (int i=0;i<SERVO_NUM;i++)
+	{
+	  MOTOR[i].writeMicroseconds(rcv_data[i].i);
+	}
+
     }
 
-  //  interrupts();
+  digitalWrite(LED_PIN,LOW);
+
+  return;
 }
 
 
@@ -148,38 +174,28 @@ void SendRemote()
 
   union Sharedblock
   {
-    byte b[4]; // utiliser char parts[4] pour port série
-    float d;
+    byte b[2]; // utiliser char parts[4] pour port série
+    uint16_t ui;
   } RCsignal[4];
 
 
   //Note we don't use shared volatile vars
   //sot that ISRs keep priority on them
-  RCsignal[0].d=
-    (float) (unThrottleInShared-THR_MIN)/
-    (THR_MAX-THR_MIN) * 100.0;
-  RCsignal[1].d=
-     ((float) unYawInShared-(RC_MAX+RC_MIN)/2)/
-    (RC_MAX-RC_MIN) * K_YAW;
-  RCsignal[2].d=
-     ((float) unPitchInShared-(RC_MAX+RC_MIN)/2)/
-    (RC_MAX-RC_MIN) * K_PITCH;
-  RCsignal[3].d=
-     ((float) unRollInShared-(RC_MAX+RC_MIN)/2)/
-    (RC_MAX-RC_MIN) * K_ROLL;
+  RCsignal[0].ui= unThrottleInShared;
+  RCsignal[1].ui= unYawInShared;
+  RCsignal[2].ui= unPitchInShared;
+  RCsignal[3].ui= unRollInShared;
 
-
-
-  byte data[16];
+  byte buffer[8];
   for (int i=0;i<4;i++)
     {
-    for (int ii=0;ii<4;ii++)
+    for (int ii=0;ii<2;ii++)
       {
-	data[ii+4*i] = RCsignal[i].b[ii];
+	buffer[ii+2*i] = RCsignal[i].b[ii];
       }
     }
 
-  Wire.write(data,16);
+  Wire.write(buffer,8);
 
 }
 
@@ -238,26 +254,4 @@ void calcRoll()
       unRollInShared = (uint16_t)(micros() - ulRollStart);
       bUpdateFlagsShared |= ROLL_FLAG;
     }
-}
-
-
-void SetServos(int byteCount)
-{
-
-// the RPI shoud send 4 x 1 uint16_t (2 bytes) values
-// one for each PID updated Motor speed
-  if (byteCount == 8)
-    {
-      while(Wire.available()) {
-
-	for (int i=0;i<SERVO_NUM;i++)
-	  {
-	    rcv_data[i].b[0] = Wire.read(); //upper bits?
-	    rcv_data[i].b[1] = Wire.read(); //upper bits?
-
-	  }
-      }
-    }
-
-  return;
 }
