@@ -1,4 +1,4 @@
-/*//
+/*
 
   Author : Vincent Jaunet
 
@@ -14,11 +14,11 @@
 
 // include the pinchangeint library - see the links in the related topics section above for details
 #include <PinChangeInt.h>
-#include <Wire.h>
+#include <WSWire.h>
 #include <Servo.h>
 
 //Define I2C variables
-#define SLAVE_ADDRESS 0x04
+#define SLAVE_ADDRESS 0x11
 
 //LED pin for checking
 #define LED_PIN 13
@@ -74,19 +74,26 @@ uint32_t ulRollStart;
 #define SERVO_NUM 4
 
 // Assign your channel out pins
-#define FL_MOTOR_OUT_PIN 4
-#define FR_MOTOR_OUT_PIN 5
-#define BL_MOTOR_OUT_PIN 6
-#define BR_MOTOR_OUT_PIN 7
+#define FL_MOTOR_OUT_PIN A0
+#define FR_MOTOR_OUT_PIN A1
+#define BL_MOTOR_OUT_PIN A2
+#define BR_MOTOR_OUT_PIN A3
 
 //define Servo variables
 Servo MOTOR[SERVO_NUM];
 
+//servo values updated by Rpi
+volatile union int_byt{
+  uint8_t b[2];
+  uint16_t i;
+} *rcv_data = new int_byt[SERVO_NUM];
 
+
+//setup function
 void setup()
 {
   Serial.begin(9600);
-  Serial.println("multiChannels");
+  // Serial.println("multiChannels");
 
   pinMode(LED_PIN, OUTPUT);
 
@@ -104,7 +111,13 @@ void setup()
   MOTOR[1].attach(FR_MOTOR_OUT_PIN);
   MOTOR[2].attach(BL_MOTOR_OUT_PIN);
   MOTOR[3].attach(BR_MOTOR_OUT_PIN);
-  Wire.onReceive(SetServos);
+
+  //Set servo values to min
+  for (int i=0;i<SERVO_NUM;i++)
+    {
+      rcv_data[i].i =RC_MIN;
+      MOTOR[i].writeMicroseconds(rcv_data[i].i);
+    }
 
   // initialize i2c as slave
   // define call backs ofr I2C
@@ -116,101 +129,72 @@ void setup()
 
 void loop()
 {
-  // create local variables to hold a local copies of the channel inputs
-  // these are declared static so that thier values will be retained
-  // between calls to loop.
-  static uint16_t unThrottleIn;
-  static uint16_t unYawIn;
-  static uint16_t unPitchIn;
-  static uint16_t unRollIn;
-  // local copy of update flags
-  static uint8_t bUpdateFlags;
+  //nothing to do here
+}
 
-  // check shared update flags to see if any channels have a new signal
-  if(bUpdateFlagsShared)
+//on Receive
+void SetServos(int byteCount)
+{
+
+// the RPI shoud send 4 x 1 uint16_t (2 bytes) values
+// one for each PID updated Motor speed
+
+  digitalWrite(LED_PIN,HIGH);
+  if (byteCount == 8)
     {
-      noInterrupts(); // turn interrupts off quickly while we take local copies of the shared variables
 
-      // take a local copy of which channels were updated in case we need to use this in the rest of loop
-      bUpdateFlags = bUpdateFlagsShared;
+      //Serial.println(Wire.available());
 
-      // in the current code, the shared values are always populated
-      // so we could copy them without testing the flags
-      // however in the future this could change, so lets
-      // only copy when the flags tell us we can.
+      while(Wire.available()) {
 
-      if(bUpdateFlags & THROTTLE_FLAG)
+	for (int i=0;i<SERVO_NUM;i++)
+	  {
+	    rcv_data[i].b[0] = Wire.read(); //upper bits?
+	    rcv_data[i].b[1] = Wire.read(); //lower bits?
+	  }
+      }
+      //update servos
+      for (int i=0;i<SERVO_NUM;i++)
 	{
-	  unThrottleIn = unThrottleInShared;
+	  MOTOR[i].writeMicroseconds(rcv_data[i].i);
 	}
 
-      if(bUpdateFlags & YAW_FLAG)
-	{
-	  unYawIn = unYawInShared;
-	}
-
-      if(bUpdateFlags & PITCH_FLAG)
-	{
-	  unPitchIn = unPitchInShared;
-	}
-
-      if(bUpdateFlags & ROLL_FLAG)
-	{
-	  unRollIn = unRollInShared;
-	}
-
-      // clear shared copy of updated flags as we have already take
-      // we still have a local copy if we need to use it in bUpdateFlags
-      bUpdateFlagsShared = 0;
-
-      interrupts(); // we have local copies of the inputs, so now we can turn interrupts back on
-      // as soon as interrupts are back on, we can no longer use the shared copies, the interrupt
-      // service routines own these and could update them at any time. During the update, the
-      // shared copies may contain junk. Luckily we have our local copies to work with :-)
     }
 
-  bUpdateFlags = 0;
+  digitalWrite(LED_PIN,LOW);
+
+  return;
 }
 
 
 // On request I2C data Sends shared values the Remote values
 // for Throttle, Yaw, Pitch and Roll
-// Note interrupts sotpped while sending values, should not
-// take much time
 void SendRemote()
 {
 
   union Sharedblock
   {
-    byte b[4]; // utiliser char parts[4] pour port série
-    float d;
+    byte b[2]; // utiliser char parts[4] pour port série
+    uint16_t ui;
   } RCsignal[4];
 
-  RCsignal[0].d=
-    (float) (unThrottleInShared-THR_MIN)/
-    (THR_MAX-THR_MIN) * 100.0;
-  RCsignal[1].d=
-     ((float) unYawInShared-(RC_MAX+RC_MIN)/2)/
-    (RC_MAX-RC_MIN) * K_YAW;
-  RCsignal[2].d=
-     ((float) unPitchInShared-(RC_MAX+RC_MIN)/2)/
-    (RC_MAX-RC_MIN) * K_PITCH;
-  RCsignal[3].d=
-     ((float) unRollInShared-(RC_MAX+RC_MIN)/2)/
-    (RC_MAX-RC_MIN) * K_ROLL;
+  //Note we don't use shared volatile vars
+  //sot that ISRs keep priority on them
+  RCsignal[0].ui= unThrottleInShared;
+  RCsignal[1].ui= unYawInShared;
+  RCsignal[2].ui= unPitchInShared;
+  RCsignal[3].ui= unRollInShared;
 
-
-
-  byte data[16];
+  byte buffer[8];
   for (int i=0;i<4;i++)
     {
-    for (int ii=0;ii<4;ii++)
+    for (int ii=0;ii<2;ii++)
       {
-	data[ii+4*i] = RCsignal[i].b[ii];
+	buffer[ii+2*i] = RCsignal[i].b[ii];
       }
     }
 
-  Wire.write(data,16);
+  Wire.write(buffer,8);
 
 }
 
@@ -269,60 +253,4 @@ void calcRoll()
       unRollInShared = (uint16_t)(micros() - ulRollStart);
       bUpdateFlagsShared |= ROLL_FLAG;
     }
-}
-
-
-void SetServos(int byteCount)
-{
-
-// the RPI shoud send 4 x 1 uint16_t (2 bytes) values
-// one for each PID updated Motor speed
-
-  union int_byt{
-    uint8_t b[2];
-    uint16_t i;
-  };
-
-  uint8_t trash;
-
-  //Expected bytes to be received
-  union int_byt *rcv_data = new int_byt[SERVO_NUM];
-
-  if (byteCount == 8)
-    {
-      while(Wire.available()) {
-
-	for (int i=0;i<SERVO_NUM;i++)
-	  {
-	    rcv_data[i].b[0] = Wire.read(); //upper bits?
-	    rcv_data[i].b[1] = Wire.read(); //upper bits?
-	  }
-      }
-
-    }
-  else {
-    //short read from master
-    //Do nothing
-    // Serial.println("Short read from master :");
-    // Serial.print("Expected 8 bytes,");
-    // Serial.print("Received ");
-    // Serial.print(byteCount);
-    // Serial.println(" bytes");
-
-    return;
-  }
-
-  //Update servo values
-  for (int i=0;i<SERVO_NUM;i++)
-    {
-      	    // Serial.print("Received value ");
-	    // Serial.print(i);
-	    // Serial.print(" = ");
-	    // Serial.println(rcv_data[i].i);
-
-      MOTOR[i].writeMicroseconds(rcv_data[i].i);
-    }
-
-  return;
-
 }
