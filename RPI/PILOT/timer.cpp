@@ -16,7 +16,7 @@
 
 #include "timer.h"
 
-#define PERIOD 10000000
+#define PERIOD 1000000
 #define YAW 0
 #define PITCH 1
 #define ROLL 2
@@ -107,22 +107,27 @@ void TimerClass::sig_handler_(int signum)
   pthread_mutex_lock(&TimerMutex_);
 
   //1-Get and Execute Command from remote
-  Arduino.readRCinputs(Timer.setpoints);
+  //Arduino.readRCinputs(Timer.setpoints,4);
+
+  printf("Received %f %f %f %f\n", Timer.setpoints[0],
+  	 Timer.setpoints[1], Timer.setpoints[2], Timer.setpoints[3]);
+
+
 
   //2- get attitude of the drone
   imu.getAttitude();
 
-  // printf("ATTITUDE: %7.2f %7.2f %7.2f\n",imu.ypr[YAW],
-  // 	 imu.ypr[PITCH],
-  // 	 imu.ypr[ROLL]);
+  printf("ATTITUDE: %7.2f %7.2f %7.2f\n",imu.ypr[YAW],
+  	 imu.ypr[PITCH],
+  	 imu.ypr[ROLL]);
 
   //3- Timer dt
   Timer.calcdt_();
-  //printf("dt : %f \n",Timer.dt);
+  //  printf("dt : %f \n",Timer.dt);
 
   //4-1 Calculate PID on attitude
 
- // if (abs(Timer.ypr_setpoint[YAW])<5) {
+  // if (abs(Timer.ypr_setpoint[YAW])<5) {
   //   Timer.ypr_setpoint[YAW] =  imu.ypr[YAW];
   // }
 
@@ -183,19 +188,23 @@ void TimerClass::sig_handler_(int signum)
   //   if timer has not been stopped
   //  if (Timer.started){
 
-    //compute each new ESC value
-    Timer.servo[0] = (int)(Timer.setpoints[0]*10+1000
-    		     + Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
-    Timer.servo[1] = (int)(Timer.setpoints[0]*10+1000
-    		     - Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
-    Timer.servo[2] = (int)(Timer.setpoints[0]*10+1000
-    		     - Timer.PIDout[PITCH] - Timer.PIDout[YAW]);
-    Timer.servo[3] = (int)(Timer.setpoints[0]*10+1000
-    		     - Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
-    Arduino.sendESCs(Timer.servo,4);
+  //compute each new ESC value
+  Timer.servo[0] = (int)(Timer.setpoints[0]*10+1000
+			 + Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
+  Timer.servo[1] = (int)(Timer.setpoints[0]*10+1000
+			 - Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
+  Timer.servo[2] = (int)(Timer.setpoints[0]*10+1000
+			 + Timer.PIDout[ROLL] - Timer.PIDout[YAW]);
+  Timer.servo[3] = (int)(Timer.setpoints[0]*10+1000
+			 - Timer.PIDout[ROLL] - Timer.PIDout[YAW]);
 
-    Timer.compensate_();
-    //}
+  printf("Sent : %d %d %d %d\n", Timer.servo[0],
+  	 Timer.servo[1], Timer.servo[2], Timer.servo[3]);
+
+  //Arduino.sendESCs(Timer.servo, sizeof(Timer.servo)/sizeof(int));
+
+  Timer.compensate_();
+  //}
 
   pthread_mutex_unlock(&TimerMutex_);
 }

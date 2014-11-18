@@ -1,10 +1,10 @@
 /*//
 
   Author : Vincent Jaunet
-  
+
 
  This sketch is made for
-  - Get RC from Rx receiver 
+  - Get RC from Rx receiver
   - transmit to Rpi pilot
   - Receive ESC and Servos input from Rpi Pilot
 
@@ -50,7 +50,7 @@
 volatile uint8_t bUpdateFlagsShared;
 
 // shared variables are updated by the ISR and read by loop.
-// In loop we immediatley take local copies so that the ISR can keep ownership of the 
+// In loop we immediatley take local copies so that the ISR can keep ownership of the
 // shared ones. To access these in loop
 // we first turn interrupts off with noInterrupts
 // we take a copy to use in loop and the turn interrupts back on
@@ -92,14 +92,14 @@ void setup()
 
   // using the PinChangeInt library, attach the interrupts
   // used to read the channels
-  PCintPort::attachInterrupt(THROTTLE_IN_PIN, calcThrottle,CHANGE); 
-  PCintPort::attachInterrupt(YAW_IN_PIN, calcYaw,CHANGE); 
-  PCintPort::attachInterrupt(PITCH_IN_PIN, calcPitch,CHANGE); 
-  PCintPort::attachInterrupt(ROLL_IN_PIN, calcRoll,CHANGE); 
+  PCintPort::attachInterrupt(THROTTLE_IN_PIN, calcThrottle,CHANGE);
+  PCintPort::attachInterrupt(YAW_IN_PIN, calcYaw,CHANGE);
+  PCintPort::attachInterrupt(PITCH_IN_PIN, calcPitch,CHANGE);
+  PCintPort::attachInterrupt(ROLL_IN_PIN, calcRoll,CHANGE);
 
-  // attach servo objects, these will generate the correct 
+  // attach servo objects, these will generate the correct
   // pulses for driving Electronic speed controllers, servos or other devices
-  // designed to interface directly with RC Receivers  
+  // designed to interface directly with RC Receivers
   MOTOR[0].attach(FL_MOTOR_OUT_PIN);
   MOTOR[1].attach(FR_MOTOR_OUT_PIN);
   MOTOR[2].attach(BL_MOTOR_OUT_PIN);
@@ -117,7 +117,7 @@ void setup()
 void loop()
 {
   // create local variables to hold a local copies of the channel inputs
-  // these are declared static so that thier values will be retained 
+  // these are declared static so that thier values will be retained
   // between calls to loop.
   static uint16_t unThrottleIn;
   static uint16_t unYawIn;
@@ -133,22 +133,22 @@ void loop()
 
       // take a local copy of which channels were updated in case we need to use this in the rest of loop
       bUpdateFlags = bUpdateFlagsShared;
-    
+
       // in the current code, the shared values are always populated
       // so we could copy them without testing the flags
       // however in the future this could change, so lets
       // only copy when the flags tell us we can.
-    
+
       if(bUpdateFlags & THROTTLE_FLAG)
 	{
 	  unThrottleIn = unThrottleInShared;
 	}
-    
+
       if(bUpdateFlags & YAW_FLAG)
 	{
 	  unYawIn = unYawInShared;
 	}
-    
+
       if(bUpdateFlags & PITCH_FLAG)
 	{
 	  unPitchIn = unPitchInShared;
@@ -158,24 +158,24 @@ void loop()
 	{
 	  unRollIn = unRollInShared;
 	}
-     
+
       // clear shared copy of updated flags as we have already take
       // we still have a local copy if we need to use it in bUpdateFlags
       bUpdateFlagsShared = 0;
-    
+
       interrupts(); // we have local copies of the inputs, so now we can turn interrupts back on
       // as soon as interrupts are back on, we can no longer use the shared copies, the interrupt
-      // service routines own these and could update them at any time. During the update, the 
+      // service routines own these and could update them at any time. During the update, the
       // shared copies may contain junk. Luckily we have our local copies to work with :-)
     }
-  
+
   bUpdateFlags = 0;
 }
 
 
 // On request I2C data Sends shared values the Remote values
 // for Throttle, Yaw, Pitch and Roll
-// Note interrupts sotpped while sending values, should not 
+// Note interrupts sotpped while sending values, should not
 // take much time
 void SendRemote()
 {
@@ -198,7 +198,7 @@ void SendRemote()
   RCsignal[3].d=
      ((float) unRollInShared-(RC_MAX+RC_MIN)/2)/
     (RC_MAX-RC_MIN) * K_ROLL;
-  
+
 
 
   byte data[16];
@@ -209,7 +209,7 @@ void SendRemote()
 	data[ii+4*i] = RCsignal[i].b[ii];
       }
     }
- 
+
   Wire.write(data,16);
 
 }
@@ -219,7 +219,7 @@ void calcThrottle()
 {
   // if the pin is high, its a rising edge of the signal pulse, so lets record its value
   if(digitalRead(THROTTLE_IN_PIN) == HIGH)
-    { 
+    {
       ulThrottleStart = micros();
     }
   else
@@ -235,7 +235,7 @@ void calcThrottle()
 void calcYaw()
 {
   if(digitalRead(YAW_IN_PIN) == HIGH)
-    { 
+    {
       ulYawStart = micros();
     }
   else
@@ -248,7 +248,7 @@ void calcYaw()
 void calcPitch()
 {
   if(digitalRead(PITCH_IN_PIN) == HIGH)
-    { 
+    {
       ulPitchStart = micros();
     }
   else
@@ -261,7 +261,7 @@ void calcPitch()
 void calcRoll()
 {
   if(digitalRead(ROLL_IN_PIN) == HIGH)
-    { 
+    {
       ulRollStart = micros();
     }
   else
@@ -279,10 +279,10 @@ void SetServos(int byteCount)
 // one for each PID updated Motor speed
 
   union int_byt{
-    uint8_t b[2]; 
+    uint8_t b[2];
     uint16_t i;
-  };    
-  
+  };
+
   uint8_t trash;
 
   //Expected bytes to be received
@@ -291,14 +291,14 @@ void SetServos(int byteCount)
   if (byteCount == 8)
     {
       while(Wire.available()) {
-	
+
 	for (int i=0;i<SERVO_NUM;i++)
 	  {
 	    rcv_data[i].b[0] = Wire.read(); //upper bits?
 	    rcv_data[i].b[1] = Wire.read(); //upper bits?
 	  }
       }
-	
+
     }
   else {
     //short read from master
