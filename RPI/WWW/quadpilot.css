@@ -1,62 +1,60 @@
 body {
     margin: 0% 20% 0% 20%;
-    padding: 0;
+    padding: 20px 10px;
+    background:#222930;
+    background:#404040;
+    overflow: auto;
 }
 
-/*----- Tabs -----*/
-.tabs {
-    width:100%;
-    display:inline-block;
+
+.tabs ul {
+    list-style: none;
+    text-align: center;
+    float:right;
+    width:100px;
+    line-height:50px;
 }
 
     /*----- Tab Links -----*/
-    /* Clearfix */
-    .tab-links:after {
-        display:block;
-	clear:both;
-        content:'';
-    }
-
-    .tab-links li {
-        margin:0px 1px;
-        float:left;
-        list-style:none;
-    }
-
     .tab-links a {
-        padding:20px 60px;
-        display:inline-block;
-        border-radius:5px 5px 0px 0px;
-        background:#7FB5DA;
-        font-size:16px;
+        margin:1px 10px 10px 1px;
+        display:block;
+        border-radius:0px 10px 0px 10px;
+        background:#DB5800;
+        font-size:20px;
         font-weight:600;
-        color:#4c4c4c;
+        color:#DCD8CF;
         transition:all linear 0.1s;
 	text-decoration:none;
+	height:50px;
+
     }
 
     .tab-links a:hover {
-        background:#a7cce5;
+        background:#D43F3F;
         text-decoration:none;
     }
 
     li.active a, li.active a:hover {
-        background:#cee;
-        color:#4c4c4c;
+        background:#D43F3F;
+	background:#008F68;
+        color:#F6F6E8;
     }
 
     /*----- Content of Tabs -----*/
     .tab-content {
-        padding:15px;
-        border-radius:0px;
-        /*box-shadow:1px 1px 1px 1px rgba(0,0,0,0.15);*/
-        background:#fff;
+	min-height: 400px;
+	margin: 0px 120px 0px 0px;
+	padding: 20px;
+	background:#404040;
+	border: 1px solid #888;
+	border-radius:10px 10px 10px 10px;
     }
 
-        .tab {
-            display:none;
-        }
+    .tab {
+        display:none;
+    }
 
-        .tab.active {
-            display:block;
-        }
+    .tab.active {
+        display:block;
+    }
