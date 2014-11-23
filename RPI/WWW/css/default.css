@@ -1,0 +1,116 @@
+@font-face {
+	font-family: 'fontawesome';
+	src:url('../fonts/fontawesome.eot');
+	src:url('../fonts/fontawesome.eot?#iefix') format('embedded-opentype'),
+		url('../fonts/fontawesome.svg#fontawesome') format('svg'),
+		url('../fonts/fontawesome.woff') format('woff'),
+		url('../fonts/fontawesome.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+}
+
+body, html { font-size: 100%; 	padding: 0; margin: 0;}
+
+/* Reset */
+*,
+*:after,
+*:before {
+	-webkit-box-sizing: border-box;
+	-moz-box-sizing: border-box;
+	box-sizing: border-box;
+}
+
+/* Clearfix hack by Nicolas Gallagher: http://nicolasgallagher.com/micro-clearfix-hack/ */
+.clearfix:before,
+.clearfix:after {
+	content: " ";
+	display: table;
+}
+
+.clearfix:after {
+	clear: both;
+}
+
+body {
+    font-family: 'Lato', Calibri, Arial, sans-serif;
+    color: #47a3da;
+}
+
+a {
+	color: #f0f0f0;
+	text-decoration: none;
+}
+
+a:hover {
+	color: #000;
+}
+
+.container > header {
+	width: 90%;
+	max-width: 70em;
+	margin: 0 auto;
+	padding: 0 1.875em 3.125em 1.875em;
+}
+
+.container > header {
+	padding: 1em 1em 1em;
+}
+
+.container > header h1 {
+	font-size: 2.125em;
+	line-height: 1.3;
+	margin: 0;
+	float: left;
+	font-weight: 400;
+}
+
+.container > header span {
+	display: block;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5em;
+	padding: 0 0 0.6em 0.1em;
+}
+
+.container > header nav {
+	float: right;
+}
+
+.container > header nav a {
+	display: block;
+	float: left;
+	position: relative;
+	width: 2.5em;
+	height: 2.5em;
+	background: #fff;
+	border-radius: 50%;
+	color: transparent;
+	margin: 0 0.1em;
+	border: 4px solid #47a3da;
+	text-indent: -8000px;
+}
+
+.container > header nav a:after {
+	content: attr(data-info);
+	color: #47a3da;
+	position: absolute;
+	width: 600%;
+	top: 120%;
+	text-align: right;
+	right: 0;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.container > header nav a:hover:after {
+	opacity: 1;
+}
+
+.container > header nav a:hover {
+	background: #47a3da;
+}
+
+
+.container > header nav a:hover:before {
+	color: #fff;
+}

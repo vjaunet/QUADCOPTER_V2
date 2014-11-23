@@ -106,20 +106,19 @@ void TimerClass::sig_handler_(int signum)
 {
   pthread_mutex_lock(&TimerMutex_);
 
-  //1-Get and Execute Command from remote
+  //1-Get Remote and Send ESC values
   //Arduino.readRCinputs(Timer.setpoints,4);
 
   printf("Received %f %f %f %f\n", Timer.setpoints[0],
   	 Timer.setpoints[1], Timer.setpoints[2], Timer.setpoints[3]);
 
 
-
-  //2- get attitude of the drone
+  //2- Get attitude of the drone
   imu.getAttitude();
 
-  printf("ATTITUDE: %7.2f %7.2f %7.2f\n",imu.ypr[YAW],
-  	 imu.ypr[PITCH],
-  	 imu.ypr[ROLL]);
+  // printf("ATTITUDE: %7.2f %7.2f %7.2f\n",imu.ypr[YAW],
+  // 	 imu.ypr[PITCH],
+  // 	 imu.ypr[ROLL]);
 
   //3- Timer dt
   Timer.calcdt_();
@@ -201,9 +200,7 @@ void TimerClass::sig_handler_(int signum)
   printf("Sent : %d %d %d %d\n", Timer.servo[0],
   	 Timer.servo[1], Timer.servo[2], Timer.servo[3]);
 
-  //Arduino.sendESCs(Timer.servo, sizeof(Timer.servo)/sizeof(int));
-
-  Timer.compensate_();
+    Timer.compensate_();
   //}
 
   pthread_mutex_unlock(&TimerMutex_);

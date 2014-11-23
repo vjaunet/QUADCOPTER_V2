@@ -54,6 +54,9 @@ int main(int argc, char *argv[])
   imu.set_com();
   imu.initialize();
 
+  //setting up SPI
+  ArduSPI.initialize();
+
   //Starting Timer
   Timer.start();
 
