@@ -35,10 +35,10 @@ SPI::SPI()
 {
 
  _devName = "/dev/spidev0.0";
- _speed = 50000000;
+ _speed = 4000000;
  _bits = 8;
  _delay = 0;
- _mode = 1;
+ _mode = 0;
 
 }
 
@@ -90,7 +90,7 @@ int SPI::transferBytes(uint8_t byteSent[], uint8_t byteRecv[])
 
   ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &msg);
   if (ret < 1)
-    printf("can't send spi message");
+    printf("can't send spi message\n");
 
   return ret;
 }
@@ -118,20 +118,24 @@ int SPI::transferRC(float RCdata[], int ESC[])
   int count = 0;
 
   //use shared blocks to convert data
-  for (int i=0;i<numRC;i++)
-    {
-      RCdata[i] = rx[i].f;
-    }
-
   for (int i=0;i<numESC;i++)
     {
-      tx[i].ui = (unsigned int)ESC[i];
+      tx[i].ui = (unsigned long)ESC[i];
     }
 
   //transfert data through spi
   for (int i=0;i<numRC;i++){
-    transferBytes(tx[i].b, rx[i].b);
+    for (int ibyte=0; ibyte<2; ibyte++){
+      transferBytes(tx[i].b, rx[i].b);
+    }
+    printf("%u %u %u %u\n",rx[i].ui);
   }
+
+  //use shared blocks to convert data
+  for (int i=0;i<numRC;i++)
+    {
+      RCdata[i] = rx[i].f;
+    }
 
   //convert into PID usable values
   RCdata[0] = (RCdata[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;

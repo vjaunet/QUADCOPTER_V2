@@ -12,6 +12,9 @@
 
 #include "I2Cclass.h"
 
+#define TRUE 1
+#define FALSE 0
+
 #define ARDUINO_ADDRESS 0x11
 
 //For RC inputs Scaling

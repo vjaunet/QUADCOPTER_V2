@@ -106,11 +106,14 @@ void TimerClass::sig_handler_(int signum)
 {
   pthread_mutex_lock(&TimerMutex_);
 
-  //1-Get Remote and Send ESC values
-  //Arduino.readRCinputs(Timer.setpoints,4);
+  float RCinput[4],PIDout[3];
+  int ESC[4];
 
-  printf("Received %f %f %f %f\n", Timer.setpoints[0],
-  	 Timer.setpoints[1], Timer.setpoints[2], Timer.setpoints[3]);
+  //1-Get Remote and Send ESC values
+  ArduSPI.transferRC(RCinput,ESC);
+
+  printf("Received %f %f %f %f\n", RCinput[0],
+  	 RCinput[1], RCinput[2], RCinput[3]);
 
 
   //2- Get attitude of the drone
@@ -134,40 +137,40 @@ void TimerClass::sig_handler_(int signum)
   //Stabilization is only done on Pitch and Roll
   //Yaw is Rate PID only
   for (int i=1;i<DIM;i++){
-    Timer.PIDout[i] =
-      yprSTAB[i].update_pid_std(Timer.setpoints[i+1],
+    PIDout[i] =
+      yprSTAB[i].update_pid_std(RCinput[i+1],
   			    imu.ypr[i],
   			    Timer.dt);
   }
-  Timer.PIDout[0] = Timer.setpoints[1];
+  PIDout[0] = RCinput[1];
 
   // printf("PITCH: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[PITCH],
   // 	 imu.ypr[PITCH],
-  // 	 Timer.PIDout[PITCH]);
+  // 	 PIDout[PITCH]);
 
-  // printf("ROLL: %7.2f %7.2f %7.2f\n",Timer.setpoints[ROLL+1],
+  // printf("ROLL: %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
   // 	 imu.ypr[ROLL],
-  // 	 Timer.PIDout[ROLL]);
+  // 	 PIDout[ROLL]);
 
 
   for (int i=0;i<DIM;i++){
-    Timer.PIDout[i] =
-      yprRATE[i].update_pid_std(Timer.PIDout[i],
+    PIDout[i] =
+      yprRATE[i].update_pid_std(PIDout[i],
 				imu.gyro[i],
 				Timer.dt);
   }
 
   // printf("YAW: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[YAW],
   // 	 imu.gyro[YAW],
-  // 	 Timer.PIDout[YAW]);
+  // 	 PIDout[YAW]);
 
   // printf("PITCH: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[PITCH],
   // 	 imu.gyro[PITCH],
-  // 	 Timer.PIDout[PITCH]);
+  // 	 PIDout[PITCH]);
 
-  // printf("ROLL:  %7.2f %7.2f %7.2f\n",Timer.setpoints[ROLL+1],
+  // printf("ROLL:  %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
   // 	 imu.gyro[ROLL],
-  // 	 Timer.PIDout[ROLL]);
+  // 	 PIDout[ROLL]);
 
 
   #endif
@@ -175,8 +178,8 @@ void TimerClass::sig_handler_(int signum)
   //4-2 Calculate PID on rotational rate
   #ifdef PID_RATE
   for (int i=0;i<DIM;i++){
-    Timer.PIDout[i] =
-      yprRATE[i].update_pid_std(Timer.setpoints[i+1],
+    PIDout[i] =
+      yprRATE[i].update_pid_std(RCinput[i+1],
       			    imu.gyro[i],
       			    Timer.dt);
   }
@@ -188,17 +191,17 @@ void TimerClass::sig_handler_(int signum)
   //  if (Timer.started){
 
   //compute each new ESC value
-  Timer.servo[0] = (int)(Timer.setpoints[0]*10+1000
-			 + Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
-  Timer.servo[1] = (int)(Timer.setpoints[0]*10+1000
-			 - Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
-  Timer.servo[2] = (int)(Timer.setpoints[0]*10+1000
-			 + Timer.PIDout[ROLL] - Timer.PIDout[YAW]);
-  Timer.servo[3] = (int)(Timer.setpoints[0]*10+1000
-			 - Timer.PIDout[ROLL] - Timer.PIDout[YAW]);
+  ESC[0] = (int)(RCinput[0]*10+1000
+			 + PIDout[PITCH] + PIDout[YAW]);
+  ESC[1] = (int)(RCinput[0]*10+1000
+			 - PIDout[PITCH] + PIDout[YAW]);
+  ESC[2] = (int)(RCinput[0]*10+1000
+			 + PIDout[ROLL] - PIDout[YAW]);
+  ESC[3] = (int)(RCinput[0]*10+1000
+			 - PIDout[ROLL] - PIDout[YAW]);
 
-  printf("Sent : %d %d %d %d\n", Timer.servo[0],
-  	 Timer.servo[1], Timer.servo[2], Timer.servo[3]);
+  printf("Sent : %d %d %d %d\n", ESC[0],
+  	 ESC[1], ESC[2], ESC[3]);
 
     Timer.compensate_();
   //}

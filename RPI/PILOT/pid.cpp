@@ -64,9 +64,9 @@ PID::PID()
 PID::PID(float kp_,float ki_,float kd_)
 {
   //PID constants
-  m_Kd = kp_;
+  m_Kp = kp_;
   m_Ki = ki_;
-  m_Kp = kd_;
+  m_Kd = kd_;
 
   //PID variables
   m_err = 0;
