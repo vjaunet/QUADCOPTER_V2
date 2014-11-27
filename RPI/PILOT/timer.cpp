@@ -107,7 +107,7 @@ void TimerClass::sig_handler_(int signum)
   pthread_mutex_lock(&TimerMutex_);
 
   float RCinput[4],PIDout[3];
-  int ESC[4];
+  int ESC[4]={1800,1800,1800,1800};
 
   //1-Get Remote and Send ESC values
   ArduSPI.transferRC(RCinput,ESC);

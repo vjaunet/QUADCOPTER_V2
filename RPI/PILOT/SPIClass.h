@@ -11,7 +11,9 @@ private:
   uint16_t _delay;
   int _fd;
 
-  int transferBytes(uint8_t datasent[],uint8_t datarecv[]);
+  int transferBytes(uint8_t *datasent,uint8_t *datarecv);
+  int writeByte(uint8_t datasent);
+  int readByte(uint8_t datarecv);
 
 public:
   SPI();
