@@ -74,6 +74,19 @@ uint32_t ulRollStart;
 //define Servo variables
 Servo MOTOR[SERVO_NUM];
 
+//define type of SPI request
+uint8_t spireq = 0;
+uint8_t spicount = 0;
+uint8_t spimax_R = 2;
+uint8_t ibyte=0;
+
+union int_byt{
+  uint8_t b[2];
+  uint16_t un;
+} rc_data, esc_data;
+
+
+
 //setup function
 void setup()
 {
@@ -110,7 +123,7 @@ void setup()
     SPI settings
   */
 
-  SPI.setDataMode(SPI_MODE0);
+  //SPI.setDataMode(SPI_MODE0);
 
   // Declare MISO as output : have to send on
   //master in, *slave out*
@@ -127,7 +140,7 @@ void setup()
 
 void loop()
 {
-  //nothing to actually do here everithing is done in interrupts
+  ////////
 }
 
 /*-----------------------
@@ -136,32 +149,52 @@ void loop()
 ISR (SPI_STC_vect)
 {
 
-//servo values updated by Rpi
-  union int_byt{
-    uint8_t b[2];
-    uint16_t un;
-  } *rx_data = new int_byt[SERVO_NUM],
-    *tx_data = new int_byt[SERVO_NUM];
+  if (spireq == 0) {
+    //we have nothing to send, grab a new command
+    byte cmd = SPDR;
+    switch (cmd) {
+    case 'R': //ask for radio input and get ESC output
+      spireq = 1;
+      ibyte=0;
 
+      // update rc_data
+      rc_data.un = unThrottleInShared;
 
-  tx_data[0].un = unThrottleInShared;
-  tx_data[1].un = unYawInShared;
-  tx_data[2].un = unPitchInShared;
-  tx_data[3].un = unRollInShared;
+      //prepare for next interrupt
+      SPDR = rc_data.b[ibyte+1];
+    };
 
-  Serial.print("Sent : ");
-  for (int i=0; i<SERVO_NUM; i++){
-    Serial.print(tx_data[i].un);
-    Serial.print(" ");
-    for (int ibyte=0; ibyte<2; ibyte++){
-      // grab byte from SPI Data Register
-      rx_data[i].b[ibyte] = SPI.transfer(tx_data[i].b[ibyte]);
-    }
-    Serial.print(rx_data[i].un);
-    Serial.print(" ");
-
+    return;
   }
-  Serial.println(" ");
+
+  switch (spireq){
+  case 1:
+    if (spicount <= spimax_R){
+      //echange values byte per byte
+
+      //grab inputs
+      esc_data.b[ibyte] = SPDR;
+
+      //prepare for next call
+      if (ibyte == 0) ibyte++;
+      SPDR = rc_data.b[ibyte-1];
+
+      spicount++;
+
+    } else {
+      //we finished send RC values
+      Serial.print("Finished transaction :");
+      Serial.print(esc_data.un);
+      Serial.print(" ");
+      Serial.println( rc_data.un);
+
+      //prepare for next request
+      SPDR = 0;
+      spireq = 0;
+      ibyte = 0;
+    }
+  }
+
 }
 
 /*----------------------------------
