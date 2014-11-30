@@ -23,12 +23,11 @@
 //LED pin for checking
 #define LED_PIN 13
 
-// These bit flags are set in bUpdateFlagsShared to indicate which
-// channels have new signals
-#define THROTTLE_FLAG 1
-#define YAW_FLAG 2
-#define PITCH_FLAG 4
-#define ROLL_FLAG 8
+//For ease of programming
+#define THR 0
+#define YAW 1
+#define PITCH 2
+#define ROLL 3
 
 // Assign your channel in pins
 #define THROTTLE_IN_PIN 8
@@ -36,9 +35,6 @@
 #define PITCH_IN_PIN 10
 #define ROLL_IN_PIN 9
 
-
-// holds the update flags defined above
-volatile uint8_t bUpdateFlagsShared;
 
 // shared variables are updated by the ISR and read by loop.
 // In loop we immediatley take local copies so that the ISR can keep ownership of the
@@ -74,18 +70,12 @@ uint32_t ulRollStart;
 //define Servo variables
 Servo MOTOR[SERVO_NUM];
 
-//define type of SPI request
-uint8_t spireq = 0;
-uint8_t spicount = 0;
-uint8_t spimax_R = 2;
-uint8_t ibyte=0;
-
-union int_byt{
-  uint8_t b[2];
-  uint16_t un;
-} rc_data, esc_data;
-
-
+//define SPI data
+byte cmd;
+volatile union int_byt{
+  uint8_t u8[2];
+  uint16_t u16;
+} rc_data[4], esc_data[4];
 
 //setup function
 void setup()
@@ -123,8 +113,6 @@ void setup()
     SPI settings
   */
 
-  //SPI.setDataMode(SPI_MODE0);
-
   // Declare MISO as output : have to send on
   //master in, *slave out*
   pinMode(MISO, OUTPUT);
@@ -140,7 +128,12 @@ void setup()
 
 void loop()
 {
-  ////////
+  //Constantly update rc_data
+  rc_data[THR].u16 = unThrottleInShared;
+  rc_data[YAW].u16 = unYawInShared;
+  rc_data[PITCH].u16 = unPitchInShared;
+  rc_data[ROLL].u16 = unRollInShared;
+
 }
 
 /*-----------------------
@@ -149,51 +142,42 @@ void loop()
 ISR (SPI_STC_vect)
 {
 
-  if (spireq == 0) {
-    //we have nothing to send, grab a new command
-    byte cmd = SPDR;
-    switch (cmd) {
-    case 'R': //ask for radio input and get ESC output
-      spireq = 1;
-      ibyte=0;
+    //grab a new command
+    cmd = SPDR;
+    switch (cmd){
+    case 10:
+      SPDR = rc_data[THR].u8[0];
+      break;
 
-      // update rc_data
-      rc_data.un = unThrottleInShared;
+    case 11:
+      SPDR = rc_data[THR].u8[1];
+      break;
 
-      //prepare for next interrupt
-      SPDR = rc_data.b[ibyte+1];
-    };
+    case 20:
+      SPDR = rc_data[YAW].u8[0];
+      break;
 
-    return;
-  }
+    case 21:
+      SPDR = rc_data[YAW].u8[1];
+      break;
 
-  switch (spireq){
-  case 1:
-    if (spicount <= spimax_R){
-      //echange values byte per byte
+    case 30:
+      SPDR = rc_data[PITCH].u8[0];
+      break;
 
-      //grab inputs
-      esc_data.b[ibyte] = SPDR;
+    case 31:
+      SPDR = rc_data[PITCH].u8[1];
+      break;
 
-      //prepare for next call
-      if (ibyte == 0) ibyte++;
-      SPDR = rc_data.b[ibyte-1];
+    case 40:
+      SPDR = rc_data[ROLL].u8[0];
+      break;
 
-      spicount++;
-
-    } else {
-      //we finished send RC values
-      Serial.print("Finished transaction :");
-      Serial.print(esc_data.un);
-      Serial.print(" ");
-      Serial.println( rc_data.un);
-
-      //prepare for next request
-      SPDR = 0;
-      spireq = 0;
-      ibyte = 0;
+    case 41:
+      SPDR = rc_data[ROLL].u8[1];
+      break;
     }
-  }
+
 
 }
 
@@ -213,6 +197,7 @@ void calcThrottle()
       // else it must be a falling edge, so lets get the time and subtract the time of the rising edge
       // this gives use the time between the rising and falling edges i.e. the pulse duration.
       unThrottleInShared = (uint16_t)(micros() - ulThrottleStart);
+
     }
 }
 
