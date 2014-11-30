@@ -17,6 +17,19 @@
 #include "timer.h"
 
 #define PERIOD 1000000
+
+#define N_RC_CHAN 4
+#define N_SERVO 4
+
+#define K_YAW 10
+#define K_PITCH 10
+#define K_ROLL 10
+
+#define RC_MIN 1100
+#define RC_MAX 1890
+#define THR_MIN 900
+#define THR_MAX 1900
+
 #define YAW 0
 #define PITCH 1
 #define ROLL 2
@@ -106,15 +119,35 @@ void TimerClass::sig_handler_(int signum)
 {
   pthread_mutex_lock(&TimerMutex_);
 
-  float RCinput[4],PIDout[3];
-  int ESC[4]={1800,1800,1800,1800};
+  float RCinput[N_RC_CHAN],PIDout[3];
+  int ESC[N_SERVO];
 
-  //1-Get Remote and Send ESC values
-  ArduSPI.transferRC(RCinput,ESC);
+  //1-Get Remote
+  union bytes{
+    uint8_t u8[2];
+    uint16_t u16;
+  } rc_union;
 
-  printf("Received %f %f %f %f\n", RCinput[0],
+  for (int i=0;i<4;i++){
+    ArduSPI.writeByte((uint8_t) (i+1)*10);
+    rc_union.u8[0] = ArduSPI.rwByte((uint8_t) (i+1)*10+1);
+    rc_union.u8[1] = ArduSPI.rwByte((uint8_t) (i+1)*10+2);
+    RCinput[i] = (float) rc_union.u16;
+  }
+
+  // //convert into PID usable values
+  RCinput[0] = (RCinput[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
+  RCinput[1] = (RCinput[1] -(RC_MAX+RC_MIN)/2.) /
+    (RC_MAX-RC_MIN) * K_YAW;
+  RCinput[2] = (RCinput[2] -(RC_MAX+RC_MIN)/2.)/
+    (RC_MAX-RC_MIN) * K_PITCH;
+  RCinput[3] = (RCinput[3] -(RC_MAX+RC_MIN)/2.)/
+    (RC_MAX-RC_MIN) * K_ROLL;
+
+
+
+  printf("Received : %f %f %f %f\n", RCinput[0],
   	 RCinput[1], RCinput[2], RCinput[3]);
-
 
   //2- Get attitude of the drone
   imu.getAttitude();
@@ -125,7 +158,7 @@ void TimerClass::sig_handler_(int signum)
 
   //3- Timer dt
   Timer.calcdt_();
-  //  printf("dt : %f \n",Timer.dt);
+   printf("dt : %f \n",Timer.dt);
 
   //4-1 Calculate PID on attitude
 
@@ -200,8 +233,8 @@ void TimerClass::sig_handler_(int signum)
   ESC[3] = (int)(RCinput[0]*10+1000
 			 - PIDout[ROLL] - PIDout[YAW]);
 
-  printf("Sent : %d %d %d %d\n", ESC[0],
-  	 ESC[1], ESC[2], ESC[3]);
+  // printf("Sent : %d %d %d %d\n", ESC[0],
+  // 	 ESC[1], ESC[2], ESC[3]);
 
     Timer.compensate_();
   //}

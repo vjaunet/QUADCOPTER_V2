@@ -78,47 +78,6 @@ int SPI::initialize(){
 
 }
 
-int SPI::transferBytes(uint8_t *byteSent, uint8_t *byteRecv)
-{
-  int ret;
-
-  struct spi_ioc_transfer msg;
-  msg.tx_buf = (unsigned long)byteSent;
-  msg.rx_buf = (unsigned long)byteRecv;
-  msg.len = ARRAY_SIZE(byteSent);
-  msg.delay_usecs = _delay;
-  msg.speed_hz = _speed;
-  msg.bits_per_word = _bits;
-
-  ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &msg);
-  if (ret < 1) {
-    printf("SPI transfer : can't send spi message\n");
-  }
-
-
-
- union
-  {
-    uint16_t ui;
-    uint8_t b[2];
-    float f;
-  } tx_u,rx_u;
-
-
- rx_u.b[0] = byteRecv[0];
- rx_u.b[1] = byteRecv[1];
-
-
- tx_u.b[0] = byteSent[0];
- tx_u.b[1] = byteSent[1];
-
-printf("%d %d\n",rx_u.ui,tx_u.ui);
-
-
-
-  return ret;
-
-}
 
 int SPI::writeByte(uint8_t byteSent)
 {
@@ -144,12 +103,11 @@ int SPI::writeByte(uint8_t byteSent)
 
 }
 
-int SPI::readByte(uint8_t byteRecv)
-{
-  int ret;
 
+uint8_t SPI::readByte()
+{
   uint8_t tx[1] = {0};
-  uint8_t rx[ARRAY_SIZE(tx)] = {0};
+  uint8_t rx[1] = {0};
 
   struct spi_ioc_transfer msg;
   msg.tx_buf = (unsigned long)tx;
@@ -159,76 +117,34 @@ int SPI::readByte(uint8_t byteRecv)
   msg.speed_hz = _speed;
   msg.bits_per_word = _bits;
 
-  ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &msg);
+  int ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &msg);
   if (ret < 1) {
     printf("SPI readByte : can't get spi message\n");
+    return 0;
   }
 
-  return ret;
+  return rx[0];
 
 }
 
-/*_________________________
-
-
-  for Quadcopter
-
-___________________________*/
-
-int SPI::transferRC(float RCdata[], int ESC[])
+uint8_t SPI::rwByte(uint8_t byteSent)
 {
+  uint8_t tx[1] = {byteSent};
+  uint8_t rx[1] = {0};
 
-  int numRC = ARRAY_SIZE(RCdata);
-  int numESC = numRC;
+  struct spi_ioc_transfer msg;
+  msg.tx_buf = (unsigned long)tx;
+  msg.rx_buf = (unsigned long)rx;
+  msg.len = (uint32_t) 1;
+  msg.delay_usecs = _delay;
+  msg.speed_hz = _speed;
+  msg.bits_per_word = _bits;
 
-
-  uint8_t cmd= 0x52; //sending the R cmd for Radio
-  printf("%d\n",cmd);
-  int ret=writeByte(cmd);
-  if (ret<1) {
-    printf("SPI transfer failed, error :%d\n",ret);
-    exit(0);
+  int ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &msg);
+  if (ret < 1) {
+    printf("SPI readByte : can't get spi message\n");
+    return 0;
   }
 
-
-  union
-  {
-    uint16_t ui;
-    uint8_t b[2];
-    float f;
-  } tx[numRC],rx[numESC];
-
-  int count = 0;
-
-  //use shared blocks to convert data
-  for (int i=0;i<numESC;i++)
-    {
-      tx[i].ui = (uint16_t)ESC[i];
-    }
-
-  //transfert data through spi
-  for (int i=0;i<1;i++){
-    transferBytes( tx[i].b, rx[i].b);
-    printf("received %d, sent %d\n",(int) rx[i].ui,(int) tx[i].ui);
-  }
-
-  exit(0);
-
-
-  //use shared blocks to convert data
-  for (int i=0;i<numRC;i++)
-    {
-      RCdata[i] = rx[i].f;
-    }
-
-  //convert into PID usable values
-  RCdata[0] = (RCdata[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
-  RCdata[1] = (RCdata[1] -(RC_MAX+RC_MIN)/2.) /
-    (RC_MAX-RC_MIN) * K_YAW;
-  RCdata[2] = (RCdata[2] -(RC_MAX+RC_MIN)/2.)/
-    (RC_MAX-RC_MIN) * K_PITCH;
-  RCdata[3] = (RCdata[3] -(RC_MAX+RC_MIN)/2.)/
-    (RC_MAX-RC_MIN) * K_ROLL;
-
-  return count;
+  return rx[0];
 }
