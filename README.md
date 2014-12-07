@@ -38,8 +38,11 @@ Many thanks to these people.
 Documentation
 -------------
 
+Principles
+![Alt text](./relative/principles.png?raw=true "Principles Diagram")
+
 Explanations of the QUADCOPTER pilot...
-To Come
+
 
 Hardware
 --------
@@ -72,10 +75,3 @@ Arduino to Rpi through I2C:
 
 ESCs and RC Receiver on Arduino:
 -....
-
-
-
-
-
-
-
