@@ -39,7 +39,7 @@ Documentation
 -------------
 
 Principles
-![Alt text](./relative/principles.png?raw=true "Principles Diagram")
+![Princples Diagram](https://github.com/vjaunet/QUADCOPTER_V2/blob/dev_pilot/principles.png "Principles Diagram")
 
 Explanations of the QUADCOPTER pilot...
 
