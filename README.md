@@ -38,8 +38,11 @@ Many thanks to these people.
 Documentation
 -------------
 
+Principles
+![Princples Diagram](https://github.com/vjaunet/QUADCOPTER_V2/blob/dev_pilot/principles.png "Principles Diagram")
+
 Explanations of the QUADCOPTER pilot...
-To Come
+
 
 Hardware
 --------

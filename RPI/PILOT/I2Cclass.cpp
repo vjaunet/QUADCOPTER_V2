@@ -13,6 +13,16 @@
 #include "I2Cclass.h"
 
 #define ARDUINO_ADDRESS 0x11
+
+//For RC inputs Scaling
+#define THR_MIN 890
+#define THR_MAX 1895
+#define RC_MIN 1000
+#define RC_MAX 2000
+#define K_YAW 30
+#define K_PITCH 20
+#define K_ROLL 20
+
 I2C Arduino(ARDUINO_ADDRESS);
 
 I2C::I2C(uint8_t address)
@@ -57,6 +67,7 @@ int I2C::sendBytes(uint8_t data[], uint8_t length)
 
   count =  write(fd, data, length);
 
+
   if (count < 0) {
     fprintf(stderr, "Failed to write device(%d): %s\n", _devAddr, ::strerror(errno));
     close(fd);
@@ -71,17 +82,9 @@ int I2C::sendBytes(uint8_t data[], uint8_t length)
   return count;
 }
 
-int I2C::readFloat(float &read_data)
+int I2C::readBytes(uint8_t data[], uint8_t length)
 {
-
-  uint8_t length=1;
   int8_t count = 0;
-
-  union Sharedblock
-  {
-    uint8_t b[4]; // utiliser char parts[4] pour port série
-    float f;
-  } data;
 
   int fd = open(_devName, O_RDWR);
   if (fd < 0) {
@@ -95,25 +98,22 @@ int I2C::readFloat(float &read_data)
     return(FALSE);
     }
 
-  count = read(fd, data.b, length);
+  count =  read(fd, data, length);
 
   if (count < 0) {
-    fprintf(stderr, "Failed to read device(%d): %s\n", count, ::strerror(errno));
+    fprintf(stderr, "Failed to write device(%d): %s\n", _devAddr, ::strerror(errno));
     close(fd);
-    return(-1);
+    return(FALSE);
   } else if (count != length) {
-    fprintf(stderr, "Short read  from device, expected %d, got %d\n", length, count);
+    fprintf(stderr, "Short write to device, expected %d, got %d\n", length, count);
     close(fd);
-    return(-1);
+    return(FALSE);
   }
   close(fd);
 
-  //use shared blocks to convert data
-  read_data = data.f;
-
   return count;
-
 }
+
 
 
 /*_________________________
@@ -121,54 +121,42 @@ int I2C::readFloat(float &read_data)
 
 ___________________________*/
 
-int I2C::readRCinputs(float read_data[])
+int I2C::readRCinputs(float RCdata[], int num)
 {
 
-  uint8_t length=16 ;
-  uint8_t buf[16];
-  int8_t count = 0;
+  uint8_t length=num*2 ;
+  uint8_t *buf   =new uint8_t[length];
 
   union
   {
-    float f;
-    uint8_t b[4];
+    uint16_t ui;
+    uint8_t b[2];
   } data[4];
 
 
-  int fd = open(_devName, O_RDWR);
-  if (fd < 0) {
-    fprintf(stderr, "Failed to open device: %s\n", strerror(errno));
-    return(FALSE);
-  }
-
-  if (ioctl(fd, I2C_SLAVE, _devAddr) < 0) {
-    fprintf(stderr, "Failed to select device: %s\n", strerror(errno));
-    close(fd);
-    return(FALSE);
-    }
-
-  count = read(fd, buf, length);
-
-  if (count < 0) {
-    fprintf(stderr, "Failed to read device(%d): %s\n", count, ::strerror(errno));
-    close(fd);
-    return(-1);
-  } else if (count != length) {
-    fprintf(stderr, "Short read  from device, expected %d, got %d\n", length, count);
-    close(fd);
-    return(-1);
-  }
-  close(fd);
+  int count = readBytes(buf,length);
 
   //use shared blocks to convert data
   for (int i=0;i<4;i++)
     {
-    for (int ii=0;ii<4;ii++)
+    for (int ii=0;ii<2;ii++)
       {
-  	data[i].b[ii] = buf[ii+4*i];
+  	data[i].b[ii] = buf[ii+2*i];
       }
-    read_data[i] =  data[i].f;
+    RCdata[i] = (float)data[i].ui;
     }
+
+  //convert into PID usable values
+  RCdata[0] = (RCdata[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
+
+  RCdata[1] = (RCdata[1] -(RC_MAX+RC_MIN)/2.) /
+    (RC_MAX-RC_MIN) * K_YAW;
+
+  RCdata[2] = (RCdata[2] -(RC_MAX+RC_MIN)/2.)/
+    (RC_MAX-RC_MIN) * K_PITCH;
+
+  RCdata[3] = (RCdata[3] -(RC_MAX+RC_MIN)/2.)/
+    (RC_MAX-RC_MIN) * K_ROLL;
 
   return count;
 }
@@ -200,5 +188,11 @@ int I2C::sendESCs(int data[], int num)
 	}
     }
 
-  return sendBytes(buf, (uint8_t) 2*num);
+  int count;
+  do {
+  count = sendBytes(buf, (uint8_t) 2*num);
+    //if (count == 0 ) exit(0);
+    usleep(1000);
+  }while ( count !=  2*num );
+
 }
