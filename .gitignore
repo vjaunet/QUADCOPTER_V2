@@ -1,3 +1,5 @@
 *.o
 *~
+*/*~
 PILOT/quad_pilot
+PILOT/*.o
