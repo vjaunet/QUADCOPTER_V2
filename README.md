@@ -19,6 +19,7 @@ sufficient abilites for the job.
 
 The Raspberry PI hosts:
 - PID controller
+- Web interface (apache) to access system status and Camera (work in progress)
 - Communication with the MPU6050 through I2C.
 - Communication to Arduino Micro through SPI
 
@@ -41,7 +42,13 @@ Documentation
 Principles
 ![Princples Diagram](https://github.com/vjaunet/QUADCOPTER_V2/blob/dev_pilot/principles.png "Principles Diagram")
 
-Explanations of the QUADCOPTER pilot...
+Usage
+------
+
+When powered, the Quad is in a locked status so that the ESCs do not turn the
+motor on. To unlock, simply put the RC sticks to the lower rigth angle. It can
+be locked again by doinng the same operation.
+This is handled by the Arduino for more safety.
 
 
 Hardware
@@ -69,9 +76,7 @@ MPU6050 :
 Arduino to Rpi through I2C:
 -VI  -> 5V
 -GND -> GND
--SDA -> SDA
--SCL -> SCL
-
+-SPI
 
 ESCs and RC Receiver on Arduino:
 -....
