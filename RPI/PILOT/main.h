@@ -12,10 +12,10 @@
 #include <sstream>
 
 #include <time.h>
-#include "global.h"
 #include "timer.h"
 #include "pid.h"
 #include "I2Cclass.h"
+#include "SPIClass.h"
 #include "dmp.h"
 
 #endif

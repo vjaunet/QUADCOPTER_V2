@@ -1,22 +1,24 @@
-#ifndef SPI_class_
-#define SPI_class_
-
-#ifndef TRUE
-#define TRUE	(1==1)
-#define FALSE	(0==1)
-#endif
+#ifndef SPI_CLASS_
+#define SPI_CLASS_
 
 class SPI {
 
 private:
   const char* _devName;
+  uint8_t _mode;
+  uint8_t _bits;
+  uint32_t _speed;
+  uint16_t _delay;
+  int _fd;
 
 public:
   SPI();
-  int transferBytes(uint8_t datasent[],uint8_t datarecv[], uint8_t length);
+  int initialize();
 
-  //Specifically made for the quadcopter
-  int transferRC(float read_data[],int numRC, int ESC[], int numESC);
+  int writeByte(uint8_t datasent);
+  uint8_t readByte();
+  uint8_t rwByte(uint8_t datasent);
+
 };
 
 extern SPI ArduSPI;

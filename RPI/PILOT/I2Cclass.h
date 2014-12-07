@@ -1,10 +1,6 @@
 #ifndef I2C_class_
 #define I2C_class_
 
-#ifndef TRUE
-#define TRUE	(1==1)
-#define FALSE	(0==1)
-#endif
 
 class I2C {
 

@@ -1,61 +1,67 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8" />
-        <link rel="stylesheet" href="quadpilot.css" />
-        <title>QuadPilot</title>
-    </head>
+<html lang="en" class="no-js">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>QuadPilot</title>
+		<meta name="description" content="Blueprint: Horizontal Drop-Down Menu" />
+		<meta name="author" content="vjaunet" />
 
-    <body>
+		<link rel="stylesheet" type="text/css" href="css/default.css" />
+		<link rel="stylesheet" type="text/css" href="css/component.css" />
+		<link rel="stylesheet" type="text/css" href="css/switch.css" />
 
-      <script src="jquery.js"></script>
-      <script src="quadpilot.js"></script>
+		<script src="js/modernizr.custom.js"></script>
+		<script src="js/cam_script_min.js"></script>
+	</head>
+	<body>
+		<div class="container">
+		  <header class="clearfix">
+		    <h1>QuadPilot v2.0</h1>
+		  </header>
+		  <div class="main">
+		    <nav id="cbp-hrmenu" class="cbp-hrmenu">
+		      <ul>
+
+			<li>
+			  <a href="#">PID</a>
+			  <div class="cbp-hrsub">
+
+			    <div class="content">
+			      <?php include("pid.php"); ?>
+			    </div>
+
+			  </div><!-- /cbp-hrsub -->
+			</li>
 
 
-<div class="tabs">
-    <ul class="tab-links">
-        <li class="active"><a href="#tab1">Tab 1</a></li>
-        <li><a href="#tab2">Tab 2</a></li>
-        <li><a href="#tab3">Tab 3</a></li>
-        <li><a href="#tab4">Tab 4</a></li>
-    </ul>
+			<li>
+			  <a href="#">Live</a>
+			  <div class="cbp-hrsub">
 
-    <div class="tab-content">
-        <div id="tab1" class="tab active">
-            <p>Tab #1 content goes here!</p>
-            <p>Donec pulvinar neque sed semper lacinia. Curabitur lacinia
-            ullamcorper nibh; quis imperdiet velit eleifend ac. Donec blandit
-            mauris eget aliquet lacinia! Donec pulvinar massa interdum risus
-            ornare mollis.</p>
-        </div>
+			    <div class="content">
+			      <script>
+			        // Auto-reload the page every N milliseconds
+				setTimeout('init();', 2000);
+			      </script>
+			      <?php include("live-view.php"); ?>
+			    </div>
 
-        <div id="tab2" class="tab">
-            <p>Tab #2 content goes here!</p>
-            <p>Donec pulvinar neque sed semper lacinia. Curabitur lacinia
-            ullamcorper nibh; quis imperdiet velit eleifend ac. Donec blandit
-            mauris eget aliquet lacinia! Donec pulvinar massa interdum risus
-            ornare mollis. In hac habitasse platea dictumst. Ut euismod tempus
-            hendrerit. Morbi ut adipiscing nisi. Etiam rutrum sodales gravida!
-            Aliquam tellus orci, iaculis vel.</p>
-        </div>
+			  </div><!-- /cbp-hrsub -->
+			</li>
 
-        <div id="tab3" class="tab">
-            <p>Tab #3 content goes here!</p>
-            <p>Donec pulvinar neque sed semper lacinia. Curabitur lacinia
-            ullamcorper nibh; quis imperdiet velit eleifend ac. Donec blandit
-            mauris eget aliquet lacinia! Donec pulvinar massa interdum ri.</p>
-        </div>
 
-        <div id="tab4" class="tab">
-            <p>Tab #4 content goes here!</p>
-            <p>Donec pulvinar neque sed semper lacinia. Curabitur lacinia
-            ullamcorper nibh; quis imperdiet velit eleifend ac. Donec blandit
-            mauris eget aliquet lacinia! Donec pulvinar massa interdum risus
-            ornare mollis. In hac habitasse platea dictumst. Ut euismod tempus
-            hendrerit. Morbi ut adipiscing nisi. Etiam rutrum sodales gravida!
-            Aliquam tellus orci, iaculis vel.</p>
-        </div>
-    </div>
-</div>
-    </body>
+		      </ul>
+		    </nav>
+		  </div>
+		</div>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+		<script src="js/cbpHorizontalMenu.min.js"></script>
+		<script>
+			$(function() {
+				cbpHorizontalMenu.init();
+			});
+		</script>
+	</body>
 </html>

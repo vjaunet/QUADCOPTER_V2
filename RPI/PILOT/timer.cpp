@@ -17,6 +17,19 @@
 #include "timer.h"
 
 #define PERIOD 1000000
+
+#define N_RC_CHAN 4
+#define N_SERVO 4
+
+#define K_YAW 10
+#define K_PITCH 30
+#define K_ROLL 30
+
+#define RC_MIN 1100
+#define RC_MAX 1890
+#define THR_MIN 900
+#define THR_MAX 1900
+
 #define YAW 0
 #define PITCH 1
 #define ROLL 2
@@ -106,24 +119,45 @@ void TimerClass::sig_handler_(int signum)
 {
   pthread_mutex_lock(&TimerMutex_);
 
-  //1-Get and Execute Command from remote
-  //Arduino.readRCinputs(Timer.setpoints,4);
+  float RCinput[N_RC_CHAN],PIDout[3];
+  uint16_t ESC[N_SERVO];
 
-  printf("Received %f %f %f %f\n", Timer.setpoints[0],
-  	 Timer.setpoints[1], Timer.setpoints[2], Timer.setpoints[3]);
+  //1-Get Remote values using SPI
+  union bytes{
+    uint8_t u8[2];
+    uint16_t u16;
+  } rc_union;
 
+  for (int i=0;i<4;i++){
+    ArduSPI.writeByte((uint8_t) (i+1)*10);
+    rc_union.u8[0] = ArduSPI.rwByte((uint8_t) (i+1)*10+1);
+    rc_union.u8[1] = ArduSPI.rwByte('S');
+    //transaction ended
+    RCinput[i] = (float) rc_union.u16;
+  }
 
+  // printf("Received : %6.3f %6.3f %6.3f %6.3f\n", RCinput[0],
+  // 	 RCinput[1], RCinput[2], RCinput[3]);
 
-  //2- get attitude of the drone
+  // //convert into PID usable values
+  RCinput[0] = (RCinput[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
+  RCinput[1] = (RCinput[1] -(RC_MAX+RC_MIN)/2.) /
+    (RC_MAX-RC_MIN) * K_YAW;
+  RCinput[2] = (RCinput[2] -(RC_MAX+RC_MIN)/2.)/
+    (RC_MAX-RC_MIN) * K_PITCH;
+  RCinput[3] = (RCinput[3] -(RC_MAX+RC_MIN)/2.)/
+    (RC_MAX-RC_MIN) * K_ROLL;
+
+  //2- Get attitude of the drone
   imu.getAttitude();
 
-  printf("ATTITUDE: %7.2f %7.2f %7.2f\n",imu.ypr[YAW],
-  	 imu.ypr[PITCH],
-  	 imu.ypr[ROLL]);
+  // printf("ATTITUDE: %7.2f %7.2f %7.2f\n",imu.ypr[YAW],
+  // 	 imu.ypr[PITCH],
+  // 	 imu.ypr[ROLL]);
 
   //3- Timer dt
   Timer.calcdt_();
-  //  printf("dt : %f \n",Timer.dt);
+  //printf("dt : %f \n",Timer.dt);
 
   //4-1 Calculate PID on attitude
 
@@ -135,40 +169,40 @@ void TimerClass::sig_handler_(int signum)
   //Stabilization is only done on Pitch and Roll
   //Yaw is Rate PID only
   for (int i=1;i<DIM;i++){
-    Timer.PIDout[i] =
-      yprSTAB[i].update_pid_std(Timer.setpoints[i+1],
+    PIDout[i] =
+      yprSTAB[i].update_pid_std(RCinput[i+1],
   			    imu.ypr[i],
   			    Timer.dt);
   }
-  Timer.PIDout[0] = Timer.setpoints[1];
+  PIDout[0] = RCinput[1];
 
   // printf("PITCH: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[PITCH],
   // 	 imu.ypr[PITCH],
-  // 	 Timer.PIDout[PITCH]);
+  // 	 PIDout[PITCH]);
 
-  // printf("ROLL: %7.2f %7.2f %7.2f\n",Timer.setpoints[ROLL+1],
+  // printf("ROLL: %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
   // 	 imu.ypr[ROLL],
-  // 	 Timer.PIDout[ROLL]);
+  // 	 PIDout[ROLL]);
 
 
   for (int i=0;i<DIM;i++){
-    Timer.PIDout[i] =
-      yprRATE[i].update_pid_std(Timer.PIDout[i],
+    PIDout[i] =
+      yprRATE[i].update_pid_std(PIDout[i],
 				imu.gyro[i],
 				Timer.dt);
   }
 
   // printf("YAW: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[YAW],
   // 	 imu.gyro[YAW],
-  // 	 Timer.PIDout[YAW]);
+  // 	 PIDout[YAW]);
 
   // printf("PITCH: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[PITCH],
   // 	 imu.gyro[PITCH],
-  // 	 Timer.PIDout[PITCH]);
+  // 	 PIDout[PITCH]);
 
-  // printf("ROLL:  %7.2f %7.2f %7.2f\n",Timer.setpoints[ROLL+1],
+  // printf("ROLL:  %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
   // 	 imu.gyro[ROLL],
-  // 	 Timer.PIDout[ROLL]);
+  // 	 PIDout[ROLL]);
 
 
   #endif
@@ -176,35 +210,38 @@ void TimerClass::sig_handler_(int signum)
   //4-2 Calculate PID on rotational rate
   #ifdef PID_RATE
   for (int i=0;i<DIM;i++){
-    Timer.PIDout[i] =
-      yprRATE[i].update_pid_std(Timer.setpoints[i+1],
+    PIDout[i] =
+      yprRATE[i].update_pid_std(RCinput[i+1],
       			    imu.gyro[i],
       			    Timer.dt);
   }
   //printf("%7.2f  %7.2f\n",imu.gyro[PITCH],Timer.PIDout[PITCH]);
   #endif
 
-  //5- ESC update and compensate Timer
-  //   if timer has not been stopped
-  //  if (Timer.started){
-
+  //5- Send ESC update via SPI
   //compute each new ESC value
-  Timer.servo[0] = (int)(Timer.setpoints[0]*10+1000
-			 + Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
-  Timer.servo[1] = (int)(Timer.setpoints[0]*10+1000
-			 - Timer.PIDout[PITCH] + Timer.PIDout[YAW]);
-  Timer.servo[2] = (int)(Timer.setpoints[0]*10+1000
-			 + Timer.PIDout[ROLL] - Timer.PIDout[YAW]);
-  Timer.servo[3] = (int)(Timer.setpoints[0]*10+1000
-			 - Timer.PIDout[ROLL] - Timer.PIDout[YAW]);
+  ESC[0] = (uint16_t)(RCinput[0]*10+1000
+			 + PIDout[PITCH] + PIDout[YAW]);
+  ESC[1] = (uint16_t)(RCinput[0]*10+1000
+			 - PIDout[PITCH] + PIDout[YAW]);
+  ESC[2] = (uint16_t)(RCinput[0]*10+1000
+			 + PIDout[ROLL] - PIDout[YAW]);
+  ESC[3] = (uint16_t)(RCinput[0]*10+1000
+			 - PIDout[ROLL] - PIDout[YAW]);
 
-  printf("Sent : %d %d %d %d\n", Timer.servo[0],
-  	 Timer.servo[1], Timer.servo[2], Timer.servo[3]);
+  for (int iesc=0;iesc < N_SERVO; iesc++) {
+    ArduSPI.writeByte(ESC[iesc] & 0xff);
+    ArduSPI.writeByte((ESC[iesc] >> 8) & 0xff);
+    }
+  //sending end of transaction
+  ArduSPI.writeByte('P');
 
-  //Arduino.sendESCs(Timer.servo, sizeof(Timer.servo)/sizeof(int));
+  // printf("    Sent : %4d %4d %4d %4d\n", ESC[0],
+  // 	 ESC[1], ESC[2], ESC[3]);
 
+  //6-compensate dt
   Timer.compensate_();
-  //}
 
   pthread_mutex_unlock(&TimerMutex_);
+
 }

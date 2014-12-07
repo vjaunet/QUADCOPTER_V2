@@ -32,6 +32,20 @@
 
 
 #include "main.h"
+#include <signal.h>
+
+void stop_motors(int s){
+  printf("Caught signal %d\n",s);
+
+  ArduSPI.writeByte('S');
+  for (int iesc=0;iesc < 8; iesc++) {
+    ArduSPI.writeByte((uint8_t) 0);
+  }
+  //sending end of transaction
+  ArduSPI.writeByte('P');
+
+  exit(1);
+}
 
 //-------------------------------------
 //--------- Main-----------------------
@@ -42,8 +56,15 @@ int main(int argc, char *argv[])
   printf("----------------------\n");
   printf("\n");
 
+  struct sigaction sigIntHandler;
+  sigIntHandler.sa_handler = stop_motors;
+  sigemptyset(&sigIntHandler.sa_mask);
+  sigIntHandler.sa_flags = 0;
 
-  //initilization of PID constants
+  sigaction(SIGINT, &sigIntHandler, NULL);
+
+
+  //initialization of PID constants
   yprRATE[YAW].set_Kpid(3.5,0.1,0.1);
   yprRATE[PITCH].set_Kpid(2.9,0.1,0.125);
   yprRATE[ROLL].set_Kpid (2.9,0.1,0.125);
@@ -54,10 +75,14 @@ int main(int argc, char *argv[])
   imu.set_com();
   imu.initialize();
 
+  //setting up SPI
+  ArduSPI.initialize();
+
   //Starting Timer
   Timer.start();
 
-  /* Waiting fo Start command */
+  /* Sleeping everything is done via
+     software interrupts  */
   while (true){
 
     usleep(20000);

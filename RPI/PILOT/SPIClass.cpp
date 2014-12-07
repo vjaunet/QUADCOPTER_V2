@@ -1,23 +1,28 @@
+/*
+
+  SPI communication class
+
+
+*/
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <string.h>
-#include <errno.h>
+#include <fcntl.h>
 #include <sys/ioctl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 
 #include "SPIClass.h"
 
-//For RC inputs Scaling
+//RC inputs Scaling values
 #define THR_MIN 890
 #define THR_MAX 1895
 #define RC_MIN 1000
 #define RC_MAX 2000
+
+// maximum angle values to be output
 #define K_YAW 30
 #define K_PITCH 20
 #define K_ROLL 20
@@ -30,62 +35,116 @@ SPI::SPI()
 {
 
  _devName = "/dev/spidev0.0";
+ _speed   = 1000000;
+ _bits    = 8;
+ _delay   = 0;
+ _mode    = 0;
 
 }
 
-int SPI::transferBytes(uint8_t byteSent[], uint8_t byteRecv[] ,uint8_t length)
+int SPI::initialize(){
+
+  int ret = 0;
+  _fd = open(_devName, O_RDWR);
+
+  if (_fd < 0)
+   printf("SPI initialize : can't open device\n");
+
+  /*
+   * spi mode
+   */
+  ret = ioctl(_fd, SPI_IOC_WR_MODE, &_mode);
+  if (ret == -1)
+    printf("SPI initialize : can't set spi mode\n");
+
+  /*
+   * bits per word
+   */
+  ret = ioctl(_fd, SPI_IOC_WR_BITS_PER_WORD, &_bits);
+  if (ret == -1)
+    printf("SPI initialize : can't set bits per word\n");
+
+
+  /*
+   * max speed hz
+   */
+  ret = ioctl(_fd, SPI_IOC_WR_MAX_SPEED_HZ, &_speed);
+  if (ret == -1)
+    printf("SPI initialize : can't set max speed hz\n");
+
+  
+  printf("SPI initialization finished\n");
+  return ret;
+
+}
+
+
+int SPI::writeByte(uint8_t byteSent)
 {
   int ret;
 
-  uint8_t rx[ARRAY_SIZE(tx)] = {0, };
-  struct spi_ioc_transfer tr = {
-    .tx_buf = (unsigned long)tx,
-    .rx_buf = (unsigned long)rx,
-    .len = ARRAY_SIZE(tx),
-    .delay_usecs = delay,
-    .speed_hz = speed,
-    .bits_per_word = bits,
-  };
+  uint8_t tx[1] = {byteSent};
+  uint8_t rx[ARRAY_SIZE(tx)] = {0,};
 
-  return count;
+  struct spi_ioc_transfer tr; 
+  tr.tx_buf = (unsigned long)tx;
+  tr.rx_buf = (unsigned long)rx;
+  tr.len = ARRAY_SIZE(tx);
+  tr.delay_usecs = _delay;
+  tr.speed_hz = _speed;
+  tr.bits_per_word = _bits;
+  
+  ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &tr);
+  if (ret < 1) {
+    printf("SPI writeByte : can't send spi message\n");
+  }
+
+  return ret;
+
 }
 
-/*_________________________
 
-
-  for Quadcopter
-
-___________________________*/
-
-int SPI::transferRC(float RCdata[], int numRC, int ESC[], int numESC )
+uint8_t SPI::readByte()
 {
-  union
-  {
-    uint32_t b;
-    float    f;
-  } tx[numRC],rx[numESC];
+  uint8_t tx[1] = {0};
+  uint8_t rx[1] = {0};
 
-  int count = 0;
+  struct spi_ioc_transfer msg;
+  msg.tx_buf = (unsigned long)tx;
+  msg.rx_buf = (unsigned long)rx;
+  msg.len = (uint32_t) 1;
+  msg.delay_usecs = _delay;
+  msg.speed_hz = _speed;
+  msg.bits_per_word = _bits;
 
-  //use shared blocks to convert data
-  for (int i=0;i<numRC;i++)
-    {
-      RCdata[i] = rx[i].f;
-    }
+  int ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &msg);
+  if (ret < 1) {
+    printf("SPI readByte : can't get spi message\n");
+    return 0;
+  }
 
-  for (int i=0;i<numESC;i++)
-    {
-      tx[i].b = (unsigned long)ESC[i];
-    }
+  return rx[0];
 
-  //convert into PID usable values
-  RCdata[0] = (RCdata[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
-  RCdata[1] = (RCdata[1] -(RC_MAX+RC_MIN)/2.) /
-    (RC_MAX-RC_MIN) * K_YAW;
-  RCdata[2] = (RCdata[2] -(RC_MAX+RC_MIN)/2.)/
-    (RC_MAX-RC_MIN) * K_PITCH;
-  RCdata[3] = (RCdata[3] -(RC_MAX+RC_MIN)/2.)/
-    (RC_MAX-RC_MIN) * K_ROLL;
+}
 
-  return count;
+uint8_t SPI::rwByte(uint8_t byteSent)
+{
+  uint8_t tx[1] = {byteSent};
+  uint8_t rx[1] = {0};
+
+  struct spi_ioc_transfer msg;
+  msg.tx_buf = (unsigned long)tx;
+  msg.rx_buf = (unsigned long)rx;
+  msg.len = (uint32_t) 1;
+  msg.delay_usecs = _delay;
+  msg.speed_hz = _speed;
+  msg.bits_per_word = _bits;
+
+  int ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &msg);
+  if (ret < 1) {
+    printf("SPI readByte : can't get spi message\n");
+    return 0;
+  }
+
+  return rx[0];
 }
