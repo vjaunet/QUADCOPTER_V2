@@ -135,14 +135,28 @@ void loop()
   rc_data[ROLL].u16 = unRollInShared;
 
   if (unThrottleInShared < 1000 &
-      unYawInShared < 1200 &
-      unPitchInShared < 1200 &
-      unRollInShared <1200 ) {
-    start = !start;
+      unYawInShared      < 1200 &
+      unPitchInShared    < 1200 &
+      unRollInShared     < 1200 ) {
 
+    uint32_t t_old = millis();
+    while (millis()-t_old < 500 ){
+      //wait to be sure that stockes are still in position
+    }
+
+    // if so change current status
+    if (unThrottleInShared < 1000 &
+	unYawInShared      < 1200 &
+	unPitchInShared    < 1200 &
+	unRollInShared     < 1200 ) {
+
+      start = !start;
+      //change LED status
+      digitalWrite(13, start);
+    }
   }
 
-  //Update servo (ESC) if necessary
+  //Update servo (ESC) if necessary and started
   if (update_servo & start){
     uint8_t ipos=0;
     for (int i=0;i<SERVO_NUM;i++)
@@ -184,6 +198,7 @@ ISR (SPI_STC_vect)
   }
 
   if (cmd == 'P') {
+    //process it !
     update_servo = true;
     pos=0;
     return;
