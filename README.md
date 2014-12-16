@@ -40,7 +40,7 @@ Documentation
 -------------
 
 Principles
-![Princples Diagram](https://github.com/vjaunet/QUADCOPTER_V2/blob/dev_pilot/principles.png "Principles Diagram")
+![Princples Diagram](https://github.com/vjaunet/QUADCOPTER_V2/blob/master/principles.png "Principles Diagram")
 
 Usage
 ------
