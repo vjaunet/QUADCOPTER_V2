@@ -17,7 +17,7 @@ class DMP {
 
  public:
   DMP();
-  void getAttitude();
+  int getAttitude();
   void set_com();
   void initialize();
   bool initialized;

@@ -30,9 +30,8 @@
   THE SOFTWARE.
 */
 
-
-#include "main.h"
 #include <signal.h>
+#include "main.h"
 
 void stop_motors(int s){
   printf("Caught signal %d\n",s);
@@ -44,7 +43,16 @@ void stop_motors(int s){
   //sending end of transaction
   ArduSPI.writeByte('P');
 
-  exit(1);
+  exit(0);
+}
+
+void Set_default_PID_config(){
+  //manual initialization of PID constants
+  yprRATE[YAW].set_Kpid(3.5, 0.0, 0.0);
+  for (int i=1;i<3;i++){
+    yprSTAB[i].set_Kpid(2.0, 0.00, 0.0);
+    yprRATE[i].set_Kpid(2.0, 0.00, 0.0);
+  }
 }
 
 //-------------------------------------
@@ -56,20 +64,15 @@ int main(int argc, char *argv[])
   printf("----------------------\n");
   printf("\n");
 
+  system("rm quadpilot.log");
+
+
+  //handling of CTRL+C input
   struct sigaction sigIntHandler;
   sigIntHandler.sa_handler = stop_motors;
   sigemptyset(&sigIntHandler.sa_mask);
   sigIntHandler.sa_flags = 0;
-
   sigaction(SIGINT, &sigIntHandler, NULL);
-
-
-  //initialization of PID constants
-  yprRATE[YAW].set_Kpid(3.5,0.1,0.1);
-  yprRATE[PITCH].set_Kpid(2.9,0.1,0.125);
-  yprRATE[ROLL].set_Kpid (2.9,0.1,0.125);
-  yprSTAB[PITCH].set_Kpid(3.3,0.035,0.04);
-  yprSTAB[ROLL].set_Kpid(3.3,0.035,0.04);
 
   //setting up IMU
   imu.set_com();
@@ -77,6 +80,9 @@ int main(int argc, char *argv[])
 
   //setting up SPI
   ArduSPI.initialize();
+
+  //Set PID config
+  Set_default_PID_config();
 
   //Starting Timer
   Timer.start();

@@ -19,7 +19,7 @@ OPT_Debug= -O2 -Wall
 # F = 200/(DDMP_FIFO_RATE + 1)
 #the program is not fast enough to read DMP at 200Hz => DDMP_FIFO_RATE = 1
 
-CXXFLAGS = -DDMP_FIFO_RATE=1
+CXXFLAGS = -DDMP_FIFO_RATE=3
 
 
 ALL:$(EXEC)

@@ -130,8 +130,8 @@ void DMP::initialize(){
   //for (int n=1;n<3500;n++)
   float yaw_old = 360;
   int n=0;
-  while (fabs(ypr[YAW]-yaw_old) > 0.0005/180.*M_PI
-	 && n<50)
+  while (fabs(ypr[YAW]-yaw_old) > 0.01/180.*M_PI
+	 && n<3500)
     {
 
     // wait for FIFO count > 42 bits
@@ -175,9 +175,9 @@ void DMP::initialize(){
 }
 
 
-void DMP::getAttitude()
+int DMP::getAttitude()
 {
-  if (!dmpReady) return;
+  if (!dmpReady) return -1;
 
   // wait for FIFO count > 42 bits
   do {
@@ -189,6 +189,8 @@ void DMP::getAttitude()
     mpu.resetFIFO();
     printf("FIFO overflow!\n");
 
+    return -1;
+
     // otherwise, check for DMP data ready interrupt
     //(this should happen frequently)
   } else  {
@@ -199,24 +201,22 @@ void DMP::getAttitude()
     mpu.dmpGetGravity(&gravity, &q);
     mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
-    ypr[0]-=m_ypr_off[0];
 
-    //scaling for degrees output
     for (int i=0;i<DIM;i++){
-      //no offset removal
-      //should be accounted while triming
-      //ypr[i]-=m_ypr_off[i];
+      //offset removal
+      ypr[i]-=m_ypr_off[i];
+
+      //scaling for output in degrees
       ypr[i]*=180/M_PI;
     }
 
     //printf(" %7.2f %7.2f %7.2f\n",ypr[0],ypr[1],ypr[2]);
 
-
     //unwrap yaw when it reaches 180
     ypr[0] = wrap_180(ypr[0]);
 
-    //change sign of Pitch, MPU is attached upside down
-    ypr[1]*=-1.0;
+    //change sign of ROLL, MPU is attached upside down
+    ypr[2]*=-1.0;
 
     mpu.dmpGetGyro(g, fifoBuffer);
 
@@ -230,6 +230,8 @@ void DMP::getAttitude()
     // printf("gyro  %7.2f %7.2f %7.2f    \n", (float)g[0]/131.0,
     // 	   (float)g[1]/131.0,
     // 	   (float)g[2]/131.0);
+
+     return 0;
 
   }
 }

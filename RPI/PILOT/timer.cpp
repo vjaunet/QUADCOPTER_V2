@@ -15,20 +15,22 @@
  */
 
 #include "timer.h"
+#include <fstream>
+using namespace std;
 
-#define PERIOD 1000000
+#define PERIOD 500000
 
 #define N_RC_CHAN 4
 #define N_SERVO 4
 
-#define K_YAW 10
-#define K_PITCH 30
-#define K_ROLL 30
+#define K_YAW 30
+#define K_PITCH 10
+#define K_ROLL 10
 
-#define RC_MIN 1100
-#define RC_MAX 1890
-#define THR_MIN 900
-#define THR_MAX 1900
+#define RC_MIN 1050
+#define RC_MAX 1900
+#define THR_MIN 890
+#define THR_MAX 1950
 
 #define YAW 0
 #define PITCH 1
@@ -119,6 +121,17 @@ void TimerClass::sig_handler_(int signum)
 {
   pthread_mutex_lock(&TimerMutex_);
 
+  //output to a log file
+  //open log file
+  fstream logfile;
+  logfile.open("quadpilot.log", ios::out|ios::app);
+  if (logfile.fail())          // Check for file creation and return error.
+    {
+      cout << "Error opening output.\n";
+    }
+
+
+
   float RCinput[N_RC_CHAN],PIDout[3];
   uint16_t ESC[N_SERVO];
 
@@ -136,8 +149,10 @@ void TimerClass::sig_handler_(int signum)
     RCinput[i] = (float) rc_union.u16;
   }
 
-  // printf("Received : %6.3f %6.3f %6.3f %6.3f\n", RCinput[0],
-  // 	 RCinput[1], RCinput[2], RCinput[3]);
+  //outputing values to logfile
+  // logfile << RCinput[0] << " " << RCinput[1] << " "
+  // 	  << RCinput[2] << " " << RCinput[3] << " ";
+
 
   // //convert into PID usable values
   RCinput[0] = (RCinput[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
@@ -148,35 +163,50 @@ void TimerClass::sig_handler_(int signum)
   RCinput[3] = (RCinput[3] -(RC_MAX+RC_MIN)/2.)/
     (RC_MAX-RC_MIN) * K_ROLL;
 
+
+
+  // printf("Received : %6.3f %6.3f %6.3f %6.3f\n", RCinput[0],
+  // 	 RCinput[1], RCinput[2], RCinput[3]);
+
+
   //2- Get attitude of the drone
-  imu.getAttitude();
+  while (imu.getAttitude() < 0){
+  };
+
+  //output to logfile
+  logfile << imu.ypr[YAW] << " " << imu.ypr[PITCH] << " "
+	  << imu.ypr[ROLL] << " "
+	  << imu.gyro[YAW] << " " << imu.gyro[PITCH] << " "
+	  << imu.gyro[ROLL] << " ";
+
+
 
   // printf("ATTITUDE: %7.2f %7.2f %7.2f\n",imu.ypr[YAW],
   // 	 imu.ypr[PITCH],
   // 	 imu.ypr[ROLL]);
+
+  // printf("          %7.2f %7.2f %7.2f\n",imu.gyro[YAW],
+  // 	 imu.gyro[PITCH],
+  // 	 imu.gyro[ROLL]);
 
   //3- Timer dt
   Timer.calcdt_();
   //printf("dt : %f \n",Timer.dt);
 
   //4-1 Calculate PID on attitude
-
-  // if (abs(Timer.ypr_setpoint[YAW])<5) {
-  //   Timer.ypr_setpoint[YAW] =  imu.ypr[YAW];
-  // }
-
   #ifdef PID_STAB
-  //Stabilization is only done on Pitch and Roll
-  //Yaw is Rate PID only
+
   for (int i=1;i<DIM;i++){
     PIDout[i] =
       yprSTAB[i].update_pid_std(RCinput[i+1],
   			    imu.ypr[i],
   			    Timer.dt);
   }
-  PIDout[0] = RCinput[1];
 
-  // printf("PITCH: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[PITCH],
+  //yaw is rate PID only
+  PIDout[YAW] = RCinput[YAW+1];
+
+  // printf("PITCH: %7.2f %7.2f %7.2f\n",RCinput[PITCH+1],
   // 	 imu.ypr[PITCH],
   // 	 PIDout[PITCH]);
 
@@ -192,11 +222,11 @@ void TimerClass::sig_handler_(int signum)
 				Timer.dt);
   }
 
-  // printf("YAW: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[YAW],
+  // printf("YAW:   %7.2f %7.2f %7.2f\n",RCinput[YAW+1],
   // 	 imu.gyro[YAW],
   // 	 PIDout[YAW]);
 
-  // printf("PITCH: %7.2f %7.2f %7.2f\n",Timer.ypr_setpoint[PITCH],
+  // printf("PITCH: %7.2f %7.2f %7.2f\n",RCinput[PITCH+1],
   // 	 imu.gyro[PITCH],
   // 	 PIDout[PITCH]);
 
@@ -218,22 +248,35 @@ void TimerClass::sig_handler_(int signum)
   //printf("%7.2f  %7.2f\n",imu.gyro[PITCH],Timer.PIDout[PITCH]);
   #endif
 
+  logfile << PIDout[YAW] << " " << PIDout[PITCH] << " "
+	  << PIDout[ROLL] << " ";
+
+
+
   //5- Send ESC update via SPI
   //compute each new ESC value
   ESC[0] = (uint16_t)(RCinput[0]*10+1000
-			 + PIDout[PITCH] + PIDout[YAW]);
-  ESC[1] = (uint16_t)(RCinput[0]*10+1000
-			 - PIDout[PITCH] + PIDout[YAW]);
+  		      + PIDout[ROLL] - PIDout[YAW]);
   ESC[2] = (uint16_t)(RCinput[0]*10+1000
-			 + PIDout[ROLL] - PIDout[YAW]);
+  		      - PIDout[ROLL] - PIDout[YAW]);
+  ESC[1] = (uint16_t)(RCinput[0]*10+1000
+  		      - PIDout[PITCH] + PIDout[YAW]);
   ESC[3] = (uint16_t)(RCinput[0]*10+1000
-			 - PIDout[ROLL] - PIDout[YAW]);
+  		      + PIDout[PITCH] + PIDout[YAW]);
+
+  // ESC[0] = (uint16_t)(RCinput[0]*10+1000);
+  // ESC[2] = (uint16_t)(RCinput[0]*10+1000);
+  // ESC[1] = (uint16_t)(RCinput[0]*10+1000);
+  // ESC[3] = (uint16_t)(RCinput[0]*10+1000);
+
+  // ESC[2] = 1100;
+  // ESC[3] = 1000;
 
   for (int iesc=0;iesc < N_SERVO; iesc++) {
     ArduSPI.writeByte(ESC[iesc] & 0xff);
     ArduSPI.writeByte((ESC[iesc] >> 8) & 0xff);
     }
-  //sending end of transaction
+  //sending Proccess it
   ArduSPI.writeByte('P');
 
   // printf("    Sent : %4d %4d %4d %4d\n", ESC[0],
@@ -242,6 +285,14 @@ void TimerClass::sig_handler_(int signum)
   //6-compensate dt
   Timer.compensate_();
 
+  //ouputting ESC values to logfile
+  logfile << ESC[0] << " " << ESC[1] << " "
+  	  << ESC[2] << " " << ESC[3] << " " << endl;
+
+  //closing logfile
+  logfile.close();
+
   pthread_mutex_unlock(&TimerMutex_);
+  //end of interrupt
 
 }

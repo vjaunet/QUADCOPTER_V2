@@ -73,8 +73,8 @@ PID::PID(float kp_,float ki_,float kd_)
   m_sum_err = 0;
   m_ddt_err = 0;
   m_lastInput= 0;
-  m_outmax =  400;
-  m_outmin = -400;
+  m_outmax =  350;
+  m_outmin = -350;
 }
 
 float PID::update_pid_std(float setpoint, float input, float dt)

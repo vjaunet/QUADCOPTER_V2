@@ -72,7 +72,7 @@ int SPI::initialize(){
   if (ret == -1)
     printf("SPI initialize : can't set max speed hz\n");
 
-  
+
   printf("SPI initialization finished\n");
   return ret;
 
@@ -86,14 +86,14 @@ int SPI::writeByte(uint8_t byteSent)
   uint8_t tx[1] = {byteSent};
   uint8_t rx[ARRAY_SIZE(tx)] = {0,};
 
-  struct spi_ioc_transfer tr; 
+  struct spi_ioc_transfer tr;
   tr.tx_buf = (unsigned long)tx;
   tr.rx_buf = (unsigned long)rx;
   tr.len = ARRAY_SIZE(tx);
   tr.delay_usecs = _delay;
   tr.speed_hz = _speed;
   tr.bits_per_word = _bits;
-  
+
   ret = ioctl(_fd, SPI_IOC_MESSAGE(1), &tr);
   if (ret < 1) {
     printf("SPI writeByte : can't send spi message\n");
