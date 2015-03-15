@@ -50,8 +50,8 @@ void Set_default_PID_config(){
   //manual initialization of PID constants
   yprRATE[YAW].set_Kpid(3.5, 0.0, 0.0);
   for (int i=1;i<3;i++){
-    yprSTAB[i].set_Kpid(2.0, 0.00, 0.0);
-    yprRATE[i].set_Kpid(2.0, 0.00, 0.0);
+    yprSTAB[i].set_Kpid(1.0, 0.001, 0.001);
+    yprRATE[i].set_Kpid(1.0, 0.001, 0.001);
   }
 }
 

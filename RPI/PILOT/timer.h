@@ -46,6 +46,7 @@ class TimerClass
   void calcdt_();
   void compensate_();
 
+  float RCinput_hist[4][4];
 
 };
 

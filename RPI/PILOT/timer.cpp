@@ -56,6 +56,7 @@ TimerClass::TimerClass()
    timer_create(CLOCK_REALTIME, NULL, &timerId);
 
    started = false;
+
  }
 
  TimerClass::TimerClass(const TimerClass& orig)
@@ -131,7 +132,6 @@ void TimerClass::sig_handler_(int signum)
     }
 
 
-
   float RCinput[N_RC_CHAN],PIDout[3];
   uint16_t ESC[N_SERVO];
 
@@ -141,18 +141,34 @@ void TimerClass::sig_handler_(int signum)
     uint16_t u16;
   } rc_union;
 
+  //Decalage du registre RChis
+  for (int i=0;i<4;i++){
+    for (int ih=4;ih-1=0;i--){
+      Timer.RCinput_hist[i][ih-1] = Timer.RCinput_hist[i][ih];
+    }
+  }
+
   for (int i=0;i<4;i++){
     ArduSPI.writeByte((uint8_t) (i+1)*10);
     rc_union.u8[0] = ArduSPI.rwByte((uint8_t) (i+1)*10+1);
     rc_union.u8[1] = ArduSPI.rwByte('S');
     //transaction ended
     RCinput[i] = (float) rc_union.u16;
+
+    //Saving values in mememory
+    Timer.RCinput_hist[i][4] = RCinput[i];
   }
 
-  //outputing values to logfile
-  // logfile << RCinput[0] << " " << RCinput[1] << " "
-  // 	  << RCinput[2] << " " << RCinput[3] << " ";
 
+  for (int i=0;i<4;i++){
+    if ((Timer.RCinput_hist[i][4]-Timer.RCinput_hist[i][2] > 0 &
+	Timer.RCinput_hist[i][4]-Timer.RCinput_hist[i][3] > 0 )|
+	(Timer.RCinput_hist[i][4]-Timer.RCinput_hist[i][2] < 0 &
+	 Timer.RCinput_hist[i][4]-Timer.RCinput_hist[i][3] < 0)
+	){
+      RCinput[i] = Timer.RCinput_hist[i][3] + Timer.RCinput_hist[i][2];
+    }
+  }
 
   // //convert into PID usable values
   RCinput[0] = (RCinput[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
@@ -162,6 +178,10 @@ void TimerClass::sig_handler_(int signum)
     (RC_MAX-RC_MIN) * K_PITCH;
   RCinput[3] = (RCinput[3] -(RC_MAX+RC_MIN)/2.)/
     (RC_MAX-RC_MIN) * K_ROLL;
+
+  //outputing values to logfile
+  logfile << RCinput[0] << " " << RCinput[1] << " "
+  	  << RCinput[2] << " " << RCinput[3] << " ";
 
 
 
@@ -252,25 +272,25 @@ void TimerClass::sig_handler_(int signum)
 	  << PIDout[ROLL] << " ";
 
 
-
   //5- Send ESC update via SPI
   //compute each new ESC value
-  ESC[0] = (uint16_t)(RCinput[0]*10+1000
-  		      + PIDout[ROLL] - PIDout[YAW]);
-  ESC[2] = (uint16_t)(RCinput[0]*10+1000
-  		      - PIDout[ROLL] - PIDout[YAW]);
   ESC[1] = (uint16_t)(RCinput[0]*10+1000
-  		      - PIDout[PITCH] + PIDout[YAW]);
+  		      + PIDout[ROLL] - PIDout[YAW]);
   ESC[3] = (uint16_t)(RCinput[0]*10+1000
+  		      - PIDout[ROLL] - PIDout[YAW]);
+  ESC[0] = (uint16_t)(RCinput[0]*10+1000
+  		      - PIDout[PITCH] + PIDout[YAW]);
+  ESC[2] = (uint16_t)(RCinput[0]*10+1000
   		      + PIDout[PITCH] + PIDout[YAW]);
 
+  // for (int i=0;i<3;i++){
+  //  ESC[i] = 1110;
+  //  }
   // ESC[0] = (uint16_t)(RCinput[0]*10+1000);
   // ESC[2] = (uint16_t)(RCinput[0]*10+1000);
   // ESC[1] = (uint16_t)(RCinput[0]*10+1000);
   // ESC[3] = (uint16_t)(RCinput[0]*10+1000);
 
-  // ESC[2] = 1100;
-  // ESC[3] = 1000;
 
   for (int iesc=0;iesc < N_SERVO; iesc++) {
     ArduSPI.writeByte(ESC[iesc] & 0xff);
