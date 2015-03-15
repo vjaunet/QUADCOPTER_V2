@@ -71,8 +71,9 @@ volatile union int_byt{
   uint16_t u16;
 } rc_data[4], esc_data[4];
 
-volatile byte rx_buf[SERVO_NUM*2];
+volatile byte rx_buf[SERVO_NUM*2+1];
 uint8_t pos=0;
+uint8_t checksum=0;
 
 bool start=false;
 volatile bool update_servo=false;
@@ -137,18 +138,18 @@ void loop()
   if (unThrottleInShared < 1000 &
       unYawInShared      < 1200 &
       unPitchInShared    < 1200 &
-      unRollInShared     < 1200 ) {
+      unRollInShared     > 1200 ) {
 
     uint32_t t_old = millis();
     while (millis()-t_old < 500 ){
-      //wait to be sure that stockes are still in position
+      //wait to be sure that sticks are still in position
     }
 
     // if so change current status
     if (unThrottleInShared < 1000 &
 	unYawInShared      < 1200 &
 	unPitchInShared    < 1200 &
-	unRollInShared     < 1200 ) {
+	unRollInShared     > 1200 ) {
 
       start = !start;
       //change LED status
@@ -159,17 +160,22 @@ void loop()
   //Update servo (ESC) if necessary and started
   if (update_servo & start){
     uint8_t ipos=0;
+    byte checksum2=0;
     for (int i=0;i<SERVO_NUM;i++)
       {
 	//process buffer values
 	for (int ibyte = 0;ibyte<2;ibyte++){
 	  esc_data[i].u8[ibyte] = rx_buf[ipos];
+	  checksum2+=rx_buf[ipos];
 	  ipos++;
 	}
-
-	//write ESC output
-	MOTOR[i].writeMicroseconds(esc_data[i].u16);
       }
+
+    if (rx_buf[ipos] == checksum2) {
+      //write ESC output
+      for (int i=0;i<SERVO_NUM;i++)
+	MOTOR[i].writeMicroseconds(esc_data[i].u16);
+    }
 
     update_servo = false;
 
@@ -204,6 +210,15 @@ ISR (SPI_STC_vect)
     return;
   }
 
+  if (cmd == 'C') {
+    //push Cheksum into the register
+    SPDR = checksum;
+    checksum = 0;
+    pos=0;
+    return;
+  }
+
+
   //push data into a byte buffer
   rx_buf[pos++] = cmd;
 
@@ -215,34 +230,42 @@ ISR (SPI_STC_vect)
   switch (cmd){
   case 10:
     SPDR = rc_data[THR].u8[0];
+    checksum += rc_data[THR].u8[0];
     break;
 
   case 11:
     SPDR = rc_data[THR].u8[1];
+    checksum += rc_data[THR].u8[1];
     break;
 
   case 20:
     SPDR = rc_data[YAW].u8[0];
+    checksum += rc_data[YAW].u8[0];
     break;
 
   case 21:
     SPDR = rc_data[YAW].u8[1];
+    checksum += rc_data[YAW].u8[1];
     break;
 
   case 30:
     SPDR = rc_data[PITCH].u8[0];
+    checksum += rc_data[PITCH].u8[0];
     break;
 
   case 31:
     SPDR = rc_data[PITCH].u8[1];
+    checksum += rc_data[PITCH].u8[1];
     break;
 
   case 40:
     SPDR = rc_data[ROLL].u8[0];
+    checksum += rc_data[ROLL].u8[0];
     break;
 
   case 41:
     SPDR = rc_data[ROLL].u8[1];
+    checksum += rc_data[ROLL].u8[1];
     break;
  }
 
