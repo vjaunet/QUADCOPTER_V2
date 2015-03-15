@@ -24,8 +24,8 @@ using namespace std;
 #define N_SERVO 4
 
 #define K_YAW 30
-#define K_PITCH 10
-#define K_ROLL 10
+#define K_PITCH 20
+#define K_ROLL 20
 
 #define RC_MIN 1050
 #define RC_MAX 1900
@@ -140,35 +140,30 @@ void TimerClass::sig_handler_(int signum)
     uint8_t u8[2];
     uint16_t u16;
   } rc_union;
+  uint8_t checksum=0,recv_checksum=1;
 
-  //Decalage du registre RChis
-  for (int i=0;i<4;i++){
-    for (int ih=4;ih-1=0;i--){
-      Timer.RCinput_hist[i][ih-1] = Timer.RCinput_hist[i][ih];
+  while (checksum != recv_checksum) {
+
+    checksum=0;
+
+    for (int i=0;i<4;i++){
+      ArduSPI.writeByte((uint8_t) (i+1)*10);
+      rc_union.u8[0] = ArduSPI.rwByte((uint8_t) (i+1)*10+1);
+      rc_union.u8[1] = ArduSPI.rwByte('S');
+      //transaction ended
+      RCinput[i] = (float) rc_union.u16;
+
+      checksum+=rc_union.u8[0];
+      checksum+=rc_union.u8[1];
     }
+
+    //Control checksum
+    ArduSPI.writeByte('C');
+    recv_checksum = ArduSPI.rwByte('S');
   }
 
-  for (int i=0;i<4;i++){
-    ArduSPI.writeByte((uint8_t) (i+1)*10);
-    rc_union.u8[0] = ArduSPI.rwByte((uint8_t) (i+1)*10+1);
-    rc_union.u8[1] = ArduSPI.rwByte('S');
-    //transaction ended
-    RCinput[i] = (float) rc_union.u16;
-
-    //Saving values in mememory
-    Timer.RCinput_hist[i][4] = RCinput[i];
-  }
-
-
-  for (int i=0;i<4;i++){
-    if ((Timer.RCinput_hist[i][4]-Timer.RCinput_hist[i][2] > 0 &
-	Timer.RCinput_hist[i][4]-Timer.RCinput_hist[i][3] > 0 )|
-	(Timer.RCinput_hist[i][4]-Timer.RCinput_hist[i][2] < 0 &
-	 Timer.RCinput_hist[i][4]-Timer.RCinput_hist[i][3] < 0)
-	){
-      RCinput[i] = Timer.RCinput_hist[i][3] + Timer.RCinput_hist[i][2];
-    }
-  }
+  // //outputting checksums
+  // logfile << recv_checksum << ' ' << checksum << ' ';
 
   // //convert into PID usable values
   RCinput[0] = (RCinput[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
@@ -250,9 +245,9 @@ void TimerClass::sig_handler_(int signum)
   // 	 imu.gyro[PITCH],
   // 	 PIDout[PITCH]);
 
-  // printf("ROLL:  %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
-  // 	 imu.gyro[ROLL],
-  // 	 PIDout[ROLL]);
+  printf("ROLL:  %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
+  	 imu.gyro[ROLL],
+  	 PIDout[ROLL]);
 
 
   #endif
@@ -292,10 +287,14 @@ void TimerClass::sig_handler_(int signum)
   // ESC[3] = (uint16_t)(RCinput[0]*10+1000);
 
 
+  checksum = 0;
   for (int iesc=0;iesc < N_SERVO; iesc++) {
     ArduSPI.writeByte(ESC[iesc] & 0xff);
+    checksum+=ESC[iesc] & 0xff;
     ArduSPI.writeByte((ESC[iesc] >> 8) & 0xff);
+    checksum+=(ESC[iesc] >> 8) & 0xff;
     }
+  ArduSPI.writeByte(checksum);
   //sending Proccess it
   ArduSPI.writeByte('P');
 
