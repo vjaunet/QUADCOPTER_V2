@@ -127,43 +127,54 @@ void DMP::initialize(){
 
   printf("Initializing IMU...\n");
 
-  //for (int n=1;n<3500;n++)
-  float yaw_old = 360;
+  //float gyr_old = 10;
   int n=0;
-  while (fabs(ypr[YAW]-yaw_old) > 0.01/180.*M_PI
-	 && n<3500)
-    {
+  do    {
 
-    // wait for FIFO count > 42 bits
-    do {
-      fifoCount = mpu.getFIFOCount();
-    }while (fifoCount<42);
+      // wait for FIFO count > 42 bits
+      do {
+	fifoCount = mpu.getFIFOCount();
+      }while (fifoCount<42);
 
-    if (fifoCount >= 1024) {
-      // reset so we can continue cleanly
-      mpu.resetFIFO();
-      printf("FIFO overflow!\n");
+      if (fifoCount >= 1024) {
+	// reset so we can continue cleanly
+	mpu.resetFIFO();
+	printf("FIFO overflow!\n");
 
-      // otherwise, check for DMP data ready interrupt
-      //(this should happen frequently)
-    } else {
+	// otherwise, check for DMP data ready interrupt
+	//(this should happen frequently)
+      } else {
 
-      //save old yaw value
-      yaw_old = ypr[YAW];
+	//save old yaw value
+	//gyr_old = gyro[ROLL];
 
-      //read packet from fifo
-      mpu.getFIFOBytes(fifoBuffer, packetSize);
+	//read packet from fifo
+	mpu.getFIFOBytes(fifoBuffer, packetSize);
 
-      mpu.dmpGetQuaternion(&q, fifoBuffer);
-      mpu.dmpGetGravity(&gravity, &q);
-      mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+	mpu.dmpGetGyro(g, fifoBuffer);
 
-      printf("yaw = %f, pitch = %f, roll = %f\n",
-       	     ypr[YAW]*180/M_PI, ypr[PITCH]*180/M_PI,
-	     ypr[ROLL]*180/M_PI);
-    }
-    n++;
-  }
+	//0=gyroX, 1=gyroY, 2=gyroZ
+	//swapped to match Yaw,Pitch,Roll
+	//Scaled from deg/s to get tr/s
+	for (int i=0;i<DIM;i++){
+	  gyro[i]   = (float)(g[DIM-i-1])/131.0/360.0;
+	}
+
+	// mpu.dmpGetQuaternion(&q, fifoBuffer);
+	// mpu.dmpGetGravity(&gravity, &q);
+	// mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
+
+	// // printf("yaw = %f, pitch = %f, roll = %f\n",
+	// //  	     ypr[YAW]*180/M_PI, ypr[PITCH]*180/M_PI,
+	// // 	     ypr[ROLL]*180/M_PI);
+      }
+
+      n++;
+  }while (fabs(gyro[ROLL]) > 0.017 && n<5000);
+
+  mpu.dmpGetQuaternion(&q, fifoBuffer);
+  mpu.dmpGetGravity(&gravity, &q);
+  mpu.dmpGetYawPitchRoll(ypr, &q, &gravity);
 
   for (int i=0;i<DIM;i++) m_ypr_off[i] = ypr[i];
 

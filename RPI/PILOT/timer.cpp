@@ -23,7 +23,7 @@ using namespace std;
 #define N_RC_CHAN 4
 #define N_SERVO 4
 
-#define K_YAW 30
+#define K_YAW 60
 #define K_PITCH 20
 #define K_ROLL 20
 
@@ -135,6 +135,7 @@ void TimerClass::sig_handler_(int signum)
   float RCinput[N_RC_CHAN],PIDout[3];
   uint16_t ESC[N_SERVO];
 
+  //------------------------------------------------------
   //1-Get Remote values using SPI
   union bytes{
     uint8_t u8[2];
@@ -178,12 +179,10 @@ void TimerClass::sig_handler_(int signum)
   logfile << RCinput[0] << " " << RCinput[1] << " "
   	  << RCinput[2] << " " << RCinput[3] << " ";
 
-
-
   // printf("Received : %6.3f %6.3f %6.3f %6.3f\n", RCinput[0],
   // 	 RCinput[1], RCinput[2], RCinput[3]);
 
-
+  //------------------------------------------------------
   //2- Get attitude of the drone
   while (imu.getAttitude() < 0){
   };
@@ -204,10 +203,13 @@ void TimerClass::sig_handler_(int signum)
   // 	 imu.gyro[PITCH],
   // 	 imu.gyro[ROLL]);
 
+
+  //------------------------------------------------------
   //3- Timer dt
   Timer.calcdt_();
   //printf("dt : %f \n",Timer.dt);
 
+  //------------------------------------------------------
   //4-1 Calculate PID on attitude
   #ifdef PID_STAB
 
@@ -237,17 +239,17 @@ void TimerClass::sig_handler_(int signum)
 				Timer.dt);
   }
 
-  // printf("YAW:   %7.2f %7.2f %7.2f\n",RCinput[YAW+1],
-  // 	 imu.gyro[YAW],
-  // 	 PIDout[YAW]);
+  printf("YAW:   %7.2f %7.2f %7.2f\n",RCinput[YAW+1],
+  	 imu.gyro[YAW],
+  	 PIDout[YAW]);
 
   // printf("PITCH: %7.2f %7.2f %7.2f\n",RCinput[PITCH+1],
   // 	 imu.gyro[PITCH],
   // 	 PIDout[PITCH]);
 
-  printf("ROLL:  %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
-  	 imu.gyro[ROLL],
-  	 PIDout[ROLL]);
+  // printf("ROLL:  %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
+  // 	 imu.gyro[ROLL],
+  // 	 PIDout[ROLL]);
 
 
   #endif
@@ -267,6 +269,7 @@ void TimerClass::sig_handler_(int signum)
 	  << PIDout[ROLL] << " ";
 
 
+  //------------------------------------------------------
   //5- Send ESC update via SPI
   //compute each new ESC value
   ESC[1] = (uint16_t)(RCinput[0]*10+1000
@@ -274,18 +277,9 @@ void TimerClass::sig_handler_(int signum)
   ESC[3] = (uint16_t)(RCinput[0]*10+1000
   		      - PIDout[ROLL] - PIDout[YAW]);
   ESC[0] = (uint16_t)(RCinput[0]*10+1000
-  		      - PIDout[PITCH] + PIDout[YAW]);
-  ESC[2] = (uint16_t)(RCinput[0]*10+1000
   		      + PIDout[PITCH] + PIDout[YAW]);
-
-  // for (int i=0;i<3;i++){
-  //  ESC[i] = 1110;
-  //  }
-  // ESC[0] = (uint16_t)(RCinput[0]*10+1000);
-  // ESC[2] = (uint16_t)(RCinput[0]*10+1000);
-  // ESC[1] = (uint16_t)(RCinput[0]*10+1000);
-  // ESC[3] = (uint16_t)(RCinput[0]*10+1000);
-
+  ESC[2] = (uint16_t)(RCinput[0]*10+1000
+  		      - PIDout[PITCH] + PIDout[YAW]);
 
   checksum = 0;
   for (int iesc=0;iesc < N_SERVO; iesc++) {
@@ -301,6 +295,7 @@ void TimerClass::sig_handler_(int signum)
   // printf("    Sent : %4d %4d %4d %4d\n", ESC[0],
   // 	 ESC[1], ESC[2], ESC[3]);
 
+  //------------------------------------------------------
   //6-compensate dt
   Timer.compensate_();
 

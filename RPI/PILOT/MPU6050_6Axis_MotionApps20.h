@@ -290,6 +290,11 @@ const prog_uchar dmpUpdates[MPU6050_DMP_UPDATES_SIZE] PROGMEM = {
 };
 
 uint8_t MPU6050::dmpInitialize() {
+
+  int8_t xgyrOfset = -155;
+  int8_t ygyrOfset = 125;
+  int8_t zgyrOfset = -210;
+
     // reset device
     DEBUG_PRINTLN(F("\n\nResetting MPU6050..."));
     reset();
@@ -329,11 +334,11 @@ uint8_t MPU6050::dmpInitialize() {
     int8_t ygOffset = getYGyroOffset();
     int8_t zgOffset = getZGyroOffset();
     DEBUG_PRINT(F("X gyro offset = "));
-    DEBUG_PRINTLN(xgOffset);
+    DEBUG_PRINTLN(xgyrOfset);
     DEBUG_PRINT(F("Y gyro offset = "));
-    DEBUG_PRINTLN(ygOffset);
+    DEBUG_PRINTLN(ygyrOfset);
     DEBUG_PRINT(F("Z gyro offset = "));
-    DEBUG_PRINTLN(zgOffset);
+    DEBUG_PRINTLN(zgyrOfset);
 
     // setup weird slave stuff (?)
     DEBUG_PRINTLN(F("Setting slave 0 address to 0x7F..."));
@@ -373,8 +378,8 @@ uint8_t MPU6050::dmpInitialize() {
             setExternalFrameSync(MPU6050_EXT_SYNC_TEMP_OUT_L);
 
             DEBUG_PRINTLN(F("Setting DLPF bandwidth to 42Hz..."));
-	    //            setDLPFMode(MPU6050_DLPF_BW_42);
-            setDLPFMode(MPU6050_DLPF_BW_10);
+	    setDLPFMode(MPU6050_DLPF_BW_42);
+	    //setDLPFMode(MPU6050_DLPF_BW_10);
 
             DEBUG_PRINTLN(F("Setting gyro sensitivity to +/- 2000 deg/sec..."));
             setFullScaleGyroRange(MPU6050_GYRO_FS_2000);

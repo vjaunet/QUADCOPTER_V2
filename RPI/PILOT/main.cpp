@@ -36,10 +36,12 @@
 void stop_motors(int s){
   printf("Caught signal %d\n",s);
 
+  uint8_t checksum=0;
   ArduSPI.writeByte('S');
   for (int iesc=0;iesc < 8; iesc++) {
     ArduSPI.writeByte((uint8_t) 0);
   }
+  ArduSPI.writeByte(checksum);
   //sending end of transaction
   ArduSPI.writeByte('P');
 
@@ -48,7 +50,7 @@ void stop_motors(int s){
 
 void Set_default_PID_config(){
   //manual initialization of PID constants
-  yprRATE[YAW].set_Kpid(0.0, 0.0, 0.0);
+  yprRATE[YAW].set_Kpid(2.0, 0.0, 0.0);
   for (int i=1;i<3;i++){
     yprSTAB[i].set_Kpid(1.8, 0.001, 0.2);
     yprRATE[i].set_Kpid(1.3, 0.001, 0.2);
@@ -82,7 +84,24 @@ int main(int argc, char *argv[])
   ArduSPI.initialize();
 
   //Set PID config
-  Set_default_PID_config();
+  if (argc == 8) {
+    printf("Setting PID constants\n");
+    printf("Rate PID :\n");
+    printf("    Kp = %f, Ki = %f, Kd = %f\n",
+	   atof(argv[1]),atof(argv[2]),atof(argv[3]));
+    printf("Rate PID :\n");
+    printf("    Kp = %f, Ki = %f, Kd = %f\n",
+	   atof(argv[4]),atof(argv[5]),atof(argv[6]));
+      for (int i=1;i<3;i++){
+	yprRATE[i].set_Kpid(atof(argv[1]),atof(argv[2]),atof(argv[3]));
+	yprSTAB[i].set_Kpid(atof(argv[4]),atof(argv[5]),atof(argv[6]));
+      }
+    printf("Yaw Rate PID :\n");
+    yprRATE[YAW].set_Kpid(atof(argv[7]), 0.0, 0.0);
+  }else {
+    printf("Setting default PID constants\n");
+    Set_default_PID_config();
+  }
 
   //Starting Timer
   Timer.start();
