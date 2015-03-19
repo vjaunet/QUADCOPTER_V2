@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdlib.h>
 #include <fstream>
+#include <math.h>
 
 class PID {
 
@@ -15,6 +16,7 @@ private:
 
   //PID constants
   float m_err;
+  float m_last_err;
   float m_sum_err;
   float m_ddt_err;
   float m_lastInput;
@@ -26,6 +28,7 @@ public:
   PID();
   PID(float,float,float);
   float update_pid_std(float setpt, float input, float dt);
+  void  updateKpKi(float setpt, float input);
   void  set_Kpid(float, float, float);
   void  set_windup_bounds(float, float);
   void  reset();

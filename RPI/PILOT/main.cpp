@@ -97,7 +97,9 @@ int main(int argc, char *argv[])
 	yprSTAB[i].set_Kpid(atof(argv[4]),atof(argv[5]),atof(argv[6]));
       }
     printf("Yaw Rate PID :\n");
+    printf("    Kp = %f\n",atof(argv[7]));
     yprRATE[YAW].set_Kpid(atof(argv[7]), 0.0, 0.0);
+
   }else {
     printf("Setting default PID constants\n");
     Set_default_PID_config();

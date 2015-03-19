@@ -170,7 +170,7 @@ void DMP::initialize(){
       }
 
       n++;
-  }while (fabs(gyro[ROLL]) > 0.017 && n<5000);
+  }while (fabs(gyro[ROLL]) > 0.02 && n<3000);
 
   mpu.dmpGetQuaternion(&q, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &q);
@@ -179,9 +179,9 @@ void DMP::initialize(){
   for (int i=0;i<DIM;i++) m_ypr_off[i] = ypr[i];
 
   printf("IMU init done; offset values are :\n");
-  printf("yaw = %f, pitch = %f, roll = %f\n\n",
+  printf("yaw = %f, pitch = %f, roll = %f, n= %d\n\n",
 	 ypr[YAW]*180/M_PI, ypr[PITCH]*180/M_PI,
-	 ypr[ROLL]*180/M_PI);
+	 ypr[ROLL]*180/M_PI,n);
   initialized = true;
 }
 

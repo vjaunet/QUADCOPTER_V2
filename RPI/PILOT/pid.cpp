@@ -14,6 +14,9 @@
    - Derivative on measurement
    - Windsup of integral errors
 
+   Reference :
+   -"A Simple PID Controller with Adaptive Parameter in a dsPIC; Case of Study"
+     http://www.aedie.org/9CHLIE-paper-send/337_CHAINHO.pdf
 
   Copyright (c) <2014> <Vincent Jaunet>
 
@@ -43,7 +46,7 @@
 PID yprSTAB[3];
 PID yprRATE[3];
 
-//default constructo
+//default constructor
 PID::PID()
 {
   //PID constants
@@ -53,6 +56,7 @@ PID::PID()
 
   //PID variables
   m_err = 0;
+  m_last_err=0;
   m_sum_err = 0;
   m_ddt_err = 0;
   m_lastInput= 0;
@@ -70,6 +74,7 @@ PID::PID(float kp_,float ki_,float kd_)
 
   //PID variables
   m_err = 0;
+  m_last_err=0;
   m_sum_err = 0;
   m_ddt_err = 0;
   m_lastInput= 0;
@@ -105,9 +110,9 @@ float PID::update_pid_std(float setpoint, float input, float dt)
 
   m_lastInput= input;
 
-  //printf("kp %f ki %f kd %f\n", m_Kp, m_Ki, m_Kd);
-  //printf("setpt %7.2f input   %7.2f output   %f\n", setpoint, input, m_output);
-  //printf("err   %7.2f ddt_err %7.2f sum_err  %7.2f\n", m_err, m_ddt_err, m_sum_err);
+  // printf("kp %f ki %f kd %f\n", m_Kp, m_Ki, m_Kd);
+  // printf("setpt %7.2f input   %7.2f output   %f\n", setpoint, input, m_output);
+  // printf("err   %7.2f ddt_err %7.2f sum_err  %7.2f\n", m_err, m_ddt_err, m_sum_err);
 
   return m_output;
 }
@@ -119,13 +124,14 @@ void PID::reset()
   m_lastInput = 0;
 }
 
-
-
 void PID::set_Kpid(float Kp,float Ki, float Kd)
 {
   m_Kp = Kp;
   m_Ki = Ki;
   m_Kd = Kd;
+
+  // printf("%f %f %f \n", m_Kp, m_Ki, m_Kd);
+  // printf("%f %f %f \n", Kp, Ki, Kd);
 
 }
 
@@ -133,4 +139,43 @@ void PID::set_windup_bounds(float Min,float Max)
 {
   m_outmax = Max;
   m_outmin = Min;
+}
+
+void PID::updateKpKi(float setpoint, float input)
+{
+  //err calculation
+  float err = setpoint-input;
+  float derr=0;
+  float err_abs = fabs(err);
+
+  if (err - m_last_err == 0.0){
+    return;
+  }
+
+  derr = (err - m_last_err)/fabs(err - m_last_err);
+
+  printf("Fuzzy PID : %6.2f %6.2f %6.2f %6.2f\n",err,derr,m_Kp,m_Ki);
+
+  if (err_abs >= 7.0){
+    m_Kp += derr*0.005*err_abs;
+  }
+
+  if (err_abs < 1.0){
+    m_Kp -= 0.01*err_abs;
+  }
+
+  if (m_Kp < 1.5) {
+    m_Kp = 1.5;
+  }
+
+  if (m_Kp > 5.0) {
+    m_Kp = 5.0;
+  }
+
+  m_last_err = err;
+
+  // if (err_abs > 4.0 && err_abs < 6.0){
+  //   m_Ki += 0.05*err;
+  //   return;
+  // }
 }

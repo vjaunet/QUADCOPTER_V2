@@ -24,8 +24,8 @@ using namespace std;
 #define N_SERVO 4
 
 #define K_YAW 60
-#define K_PITCH 20
-#define K_ROLL 20
+#define K_PITCH 40
+#define K_ROLL 40
 
 #define RC_MIN 1050
 #define RC_MAX 1900
@@ -214,6 +214,9 @@ void TimerClass::sig_handler_(int signum)
   #ifdef PID_STAB
 
   for (int i=1;i<DIM;i++){
+
+    //yprSTAB[i].updateKpKi(RCinput[i+1],imu.ypr[i]);
+
     PIDout[i] =
       yprSTAB[i].update_pid_std(RCinput[i+1],
   			    imu.ypr[i],
@@ -223,14 +226,13 @@ void TimerClass::sig_handler_(int signum)
   //yaw is rate PID only
   PIDout[YAW] = RCinput[YAW+1];
 
-  // printf("PITCH: %7.2f %7.2f %7.2f\n",RCinput[PITCH+1],
-  // 	 imu.ypr[PITCH],
-  // 	 PIDout[PITCH]);
+  printf("PITCH: %7.2f %7.2f %7.2f\n",RCinput[PITCH+1],
+  	 imu.ypr[PITCH],
+  	 PIDout[PITCH]);
 
-  // printf("ROLL: %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
-  // 	 imu.ypr[ROLL],
-  // 	 PIDout[ROLL]);
-
+  printf("ROLL: %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
+  	 imu.ypr[ROLL],
+  	 PIDout[ROLL]);
 
   for (int i=0;i<DIM;i++){
     PIDout[i] =
@@ -239,9 +241,9 @@ void TimerClass::sig_handler_(int signum)
 				Timer.dt);
   }
 
-  printf("YAW:   %7.2f %7.2f %7.2f\n",RCinput[YAW+1],
-  	 imu.gyro[YAW],
-  	 PIDout[YAW]);
+  // printf("YAW:   %7.2f %7.2f %7.2f\n",RCinput[YAW+1],
+  // 	 imu.gyro[YAW],
+  // 	 PIDout[YAW]);
 
   // printf("PITCH: %7.2f %7.2f %7.2f\n",RCinput[PITCH+1],
   // 	 imu.gyro[PITCH],
@@ -273,13 +275,13 @@ void TimerClass::sig_handler_(int signum)
   //5- Send ESC update via SPI
   //compute each new ESC value
   ESC[1] = (uint16_t)(RCinput[0]*10+1000
-  		      + PIDout[ROLL] - PIDout[YAW]);
+  		      + PIDout[ROLL] + PIDout[YAW]);
   ESC[3] = (uint16_t)(RCinput[0]*10+1000
-  		      - PIDout[ROLL] - PIDout[YAW]);
+  		      - PIDout[ROLL] + PIDout[YAW]);
   ESC[0] = (uint16_t)(RCinput[0]*10+1000
-  		      + PIDout[PITCH] + PIDout[YAW]);
+  		      + PIDout[PITCH] - PIDout[YAW]);
   ESC[2] = (uint16_t)(RCinput[0]*10+1000
-  		      - PIDout[PITCH] + PIDout[YAW]);
+  		      - PIDout[PITCH] - PIDout[YAW]);
 
   checksum = 0;
   for (int iesc=0;iesc < N_SERVO; iesc++) {
