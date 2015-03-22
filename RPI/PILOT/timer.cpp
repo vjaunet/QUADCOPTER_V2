@@ -40,6 +40,8 @@ using namespace std;
 /*Defines which PID control to use*/
 #define PID_STAB
 //#define PID_RATE
+#define XMODE
+
 
 TimerClass Timer;
 pthread_mutex_t TimerMutex_;
@@ -163,9 +165,6 @@ void TimerClass::sig_handler_(int signum)
     recv_checksum = ArduSPI.rwByte('S');
   }
 
-  // //outputting checksums
-  // logfile << recv_checksum << ' ' << checksum << ' ';
-
   // //convert into PID usable values
   RCinput[0] = (RCinput[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
   RCinput[1] = (RCinput[1] -(RC_MAX+RC_MIN)/2.) /
@@ -174,6 +173,20 @@ void TimerClass::sig_handler_(int signum)
     (RC_MAX-RC_MIN) * K_PITCH;
   RCinput[3] = (RCinput[3] -(RC_MAX+RC_MIN)/2.)/
     (RC_MAX-RC_MIN) * K_ROLL;
+
+
+  #ifdef XMODE
+      //Switch to Xmode instead of +mode
+      //orders are given in a ref frame rotated by 90deg.
+      float cs45 = sqrt(2.)/2.;
+      float Px = RCinput[2]*cs45 +  RCinput[3]*cs45;
+      float Rx = - RCinput[2]*cs45 +  RCinput[3]*cs45;
+
+      RCinput[2] = Px;
+      RCinput[3] = Rx;
+
+  #endif
+
 
   //outputing values to logfile
   logfile << RCinput[0] << " " << RCinput[1] << " "
@@ -226,13 +239,13 @@ void TimerClass::sig_handler_(int signum)
   //yaw is rate PID only
   PIDout[YAW] = RCinput[YAW+1];
 
-  printf("PITCH: %7.2f %7.2f %7.2f\n",RCinput[PITCH+1],
-  	 imu.ypr[PITCH],
-  	 PIDout[PITCH]);
+  // printf("PITCH: %7.2f %7.2f %7.2f\n",RCinput[PITCH+1],
+  // 	 imu.ypr[PITCH],
+  // 	 PIDout[PITCH]);
 
-  printf("ROLL: %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
-  	 imu.ypr[ROLL],
-  	 PIDout[ROLL]);
+  // printf("ROLL: %7.2f %7.2f %7.2f\n",RCinput[ROLL+1],
+  // 	 imu.ypr[ROLL],
+  // 	 PIDout[ROLL]);
 
   for (int i=0;i<DIM;i++){
     PIDout[i] =

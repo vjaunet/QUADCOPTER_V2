@@ -170,7 +170,7 @@ void DMP::initialize(){
       }
 
       n++;
-  }while (fabs(gyro[ROLL]) > 0.02 && n<3000);
+  }while (fabs(gyro[ROLL]) + fabs(gyro[PITCH]) > 0.03 && n<5000);
 
   mpu.dmpGetQuaternion(&q, fifoBuffer);
   mpu.dmpGetGravity(&gravity, &q);
