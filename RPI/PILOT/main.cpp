@@ -57,6 +57,15 @@ void Set_default_PID_config(){
   }
 }
 
+void Blink_led(){
+  for(int i=0;i<10;i++){
+  system("gpio write 15 0");
+  usleep(200000);
+  system("gpio write 15 1");
+  usleep(200000);
+  }
+}
+
 //-------------------------------------
 //--------- Main-----------------------
 
@@ -104,6 +113,9 @@ int main(int argc, char *argv[])
     printf("Setting default PID constants\n");
     Set_default_PID_config();
   }
+
+  //Say I am ready
+  Blink_led();
 
   //Starting Timer
   Timer.start();
