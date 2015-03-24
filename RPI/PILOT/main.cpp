@@ -58,6 +58,7 @@ void Set_default_PID_config(){
 }
 
 void Blink_led(){
+  // use gpio to blink an led on pin 15
   for(int i=0;i<10;i++){
   system("gpio write 15 0");
   usleep(200000);

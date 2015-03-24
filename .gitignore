@@ -1,5 +1,7 @@
 *.o
 *~
 */*~
-PILOT/quad_pilot
-PILOT/*.o
+RPI/PILOT/quad_pilot
+*/*/*.o
+*.log
+*/*/*.log
