@@ -9,16 +9,16 @@ button=2
 trap ctrl_c INT
 
 function setup(){
-    gpio mode $1 out
-    gpio mode $2 in
+    /usr/local/bin/gpio mode $1 out
+    /usr/local/bin/gpio mode $2 in
 }
 
 function set_off(){
-    gpio write $1 0
+    /usr/local/bin/gpio write $1 0
 }
 
 function set_on(){
-    gpio write $1 1
+    /usr/local/bin/gpio write $1 1
 }
 
 
@@ -48,13 +48,13 @@ function waitButton ()
     Blink_fast $LED;
     echo ""
  echo "Waiting for button ..."
- while [ `gpio read $1` = 0 ]; do
+ while [ `/usr/local/bin/gpio read $1` = 0 ]; do
    sleep 0.1
  done
 
  echo "Button pressed : stay pressed for shutdown"
  n=0
- while [ `gpio read $1` = 1 ]; do
+ while [ `/usr/local/bin/gpio read $1` = 1 ]; do
    sleep 0.1
    n=`expr $n + 1`
 
@@ -87,13 +87,13 @@ rate_kp=1.4
 rate_ki=0.01
 rate_kd=0.02
 
-stab_kp=3.0
+stab_kp=2.5
 stab_ki=0.01
 stab_kd=0.5
 
-yaw_rate=2.5
+yaw_rate=5.0
 ( sudo /home/pi/QUADCOPTER_V2/RPI/PILOT/quad_pilot $rate_kp $rate_ki $rate_kd\
-       $stab_kp $stab_ki $stab_kd $yaw_rate ) &
+       $stab_kp $stab_ki $stab_kd $yaw_rate > quad_pilot.log 2>&1 ) &
 }
 
 
