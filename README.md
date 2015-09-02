@@ -19,7 +19,7 @@ sufficient abilites for the job.
 
 The Raspberry PI hosts:
 - PID controller
-- Web interface (apache) to access system status and Camera (work in progress)
+- Web interface to access the Camera (work in progress)
 - Communication with the MPU6050 through I2C.
 - Communication to Arduino Micro through SPI
 
@@ -46,9 +46,9 @@ Usage
 ------
 
 When powered, the Quad is in a locked status so that the ESCs do not turn the
-motor on. To unlock, simply put the RC sticks to the lower rigth angle. It can
-be locked again by doinng the same operation.
-This is handled by the Arduino for more safety.
+motor on. To unlock, simply put the RC sticks to the lower center angle. It can
+be locked again by doing the same operation. This is handled by the Arduino 
+for more safety.
 
 
 Hardware
@@ -62,21 +62,25 @@ This projects includes :
 - 1 QuadCopter frame
 - 1 4 channels RC Remote + Receiver
 - 1 arduino micro
+- 1 logic level converter
 
 Wiring
 ------
 
-MPU6050 :
+MPU6050 -> RPI :
 -VDD -> 3.3V
 -GND -> GND
 -SDA -> SDA
 -SCL -> SCL
 -VIO -> 3.3V
 
-Arduino to Rpi through I2C:
--VI  -> 5V
--GND -> GND
--SPI
+Arduino -> RPI :
+-VCC  -> 5V from external Regulator
+-GND  -> GND
+-MISO -> Logic Level converter ->MISO
+-MOSI -> Logic Level converter ->MOSI
+-SCK  -> Logic Level converter ->SCK
 
 ESCs and RC Receiver on Arduino:
--....
+-Using PinChange interrupts
+-Check in the arduino code

@@ -58,12 +58,12 @@ void Set_default_PID_config(){
 }
 
 void Blink_led(){
-  // use gpio to blink an led on pin 15
-  for(int i=0;i<10;i++){
-  system("gpio write 15 0");
-  usleep(200000);
-  system("gpio write 15 1");
-  usleep(200000);
+  // use gpio to blink an led on pin 0
+  for(int i=0;i<30;i++){
+  system("/usr/local/bin/gpio write 0 0");
+  usleep(50000);
+  system("/usr/local/bin/gpio write 0 1");
+  usleep(50000);
   }
 }
 

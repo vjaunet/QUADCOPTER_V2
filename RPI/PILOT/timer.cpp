@@ -23,14 +23,14 @@ using namespace std;
 #define N_RC_CHAN 4
 #define N_SERVO 4
 
-#define K_YAW 60
-#define K_PITCH 40
-#define K_ROLL 40
+#define K_YAW 260
+#define K_PITCH 120
+#define K_ROLL 120
 
-#define RC_MIN 1050
-#define RC_MAX 1900
+#define RC_MIN 1000
+#define RC_MAX 2000
 #define THR_MIN 890
-#define THR_MAX 1950
+#define THR_MAX 1900
 
 #define YAW 0
 #define PITCH 1
@@ -165,14 +165,29 @@ void TimerClass::sig_handler_(int signum)
     recv_checksum = ArduSPI.rwByte('S');
   }
 
+  //Bounding RC values to avoid division by zeros fex.
+    for (int i=1;i<4;i++){
+      if ( RCinput[i] > RC_MAX)	RCinput[i] = RC_MAX;
+      if ( RCinput[i] < RC_MIN)	RCinput[i] = RC_MIN;
+    }
+
+  //outputing values to logfile
+  logfile << RCinput[0] << " " << RCinput[1] << " "
+  	  << RCinput[2] << " " << RCinput[3] << " ";
+
+
   // //convert into PID usable values
   RCinput[0] = (RCinput[0] - THR_MIN)/(THR_MAX-THR_MIN) * 100.0;
-  RCinput[1] = (RCinput[1] -(RC_MAX+RC_MIN)/2.) /
+  RCinput[1] = -(RCinput[1] -(RC_MAX+RC_MIN)/2.) /
     (RC_MAX-RC_MIN) * K_YAW;
   RCinput[2] = (RCinput[2] -(RC_MAX+RC_MIN)/2.)/
     (RC_MAX-RC_MIN) * K_PITCH;
   RCinput[3] = (RCinput[3] -(RC_MAX+RC_MIN)/2.)/
     (RC_MAX-RC_MIN) * K_ROLL;
+
+  //outputing values to logfile
+  logfile << RCinput[0] << " " << RCinput[1] << " "
+  	  << RCinput[2] << " " << RCinput[3] << " ";
 
 
   #ifdef XMODE
@@ -187,11 +202,6 @@ void TimerClass::sig_handler_(int signum)
 
   #endif
 
-
-  //outputing values to logfile
-  logfile << RCinput[0] << " " << RCinput[1] << " "
-  	  << RCinput[2] << " " << RCinput[3] << " ";
-
   // printf("Received : %6.3f %6.3f %6.3f %6.3f\n", RCinput[0],
   // 	 RCinput[1], RCinput[2], RCinput[3]);
 
@@ -199,6 +209,11 @@ void TimerClass::sig_handler_(int signum)
   //2- Get attitude of the drone
   while (imu.getAttitude() < 0){
   };
+
+
+  //Compensate lost of Thrust due to angle of drone
+  RCinput[0] = RCinput[0]/cos(imu.ypr[ROLL]/180*M_PI)
+    /cos(imu.ypr[PITCH]/180*M_PI);
 
   //output to logfile
   logfile << imu.ypr[YAW] << " " << imu.ypr[PITCH] << " "
@@ -287,14 +302,25 @@ void TimerClass::sig_handler_(int signum)
   //------------------------------------------------------
   //5- Send ESC update via SPI
   //compute each new ESC value
-  ESC[1] = (uint16_t)(RCinput[0]*10+1000
-  		      + PIDout[ROLL] + PIDout[YAW]);
-  ESC[3] = (uint16_t)(RCinput[0]*10+1000
-  		      - PIDout[ROLL] + PIDout[YAW]);
-  ESC[0] = (uint16_t)(RCinput[0]*10+1000
-  		      + PIDout[PITCH] - PIDout[YAW]);
-  ESC[2] = (uint16_t)(RCinput[0]*10+1000
-  		      - PIDout[PITCH] - PIDout[YAW]);
+
+  //if THR is low disable PID and be sure that ESC receive Zero
+  printf("%f \n",RCinput[0]);
+
+  if (RCinput[0] < 7.0) {
+    for (int i=0;i<4;i++){
+      ESC[i] = (uint16_t)0;
+    }
+  } else {
+
+    ESC[1] = (uint16_t)(RCinput[0]*10+1000
+			+ PIDout[ROLL] + PIDout[YAW]);
+    ESC[3] = (uint16_t)(RCinput[0]*10+1000
+			- PIDout[ROLL] + PIDout[YAW]);
+    ESC[0] = (uint16_t)(RCinput[0]*10+1000
+			+ PIDout[PITCH] - PIDout[YAW]);
+    ESC[2] = (uint16_t)(RCinput[0]*10+1000
+			- PIDout[PITCH] - PIDout[YAW]);
+  }
 
   checksum = 0;
   for (int iesc=0;iesc < N_SERVO; iesc++) {
