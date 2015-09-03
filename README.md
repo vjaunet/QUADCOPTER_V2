@@ -84,3 +84,13 @@ Arduino -> RPI :
 ESCs and RC Receiver on Arduino:
 -Using PinChange interrupts
 -Check in the arduino code
+
+Pictures
+--------
+
+![Picture of the quad](https://github.com/vjaunet/QUADCOPTER_V2/blob/master/IMG_20150903_201519408.jpg "Picture 1")
+![Picture of the quad](https://github.com/vjaunet/QUADCOPTER_V2/blob/master/IMG_20150903_201539846.jpg "Picture 2")
+![Picture of the quad](https://github.com/vjaunet/QUADCOPTER_V2/blob/master/IMG_20150903_201553147.jpg"Picture 3")
+![Picture of the quad](https://github.com/vjaunet/QUADCOPTER_V2/blob/master/IMG_20150903_201553147.jpg "Picture 4")
+![Picture of the quad](https://github.com/vjaunet/QUADCOPTER_V2/blob/master/IMG_20150903_201651320.jpg "Picture 5")
+
