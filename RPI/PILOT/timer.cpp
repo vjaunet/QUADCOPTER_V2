@@ -304,7 +304,7 @@ void TimerClass::sig_handler_(int signum)
   //compute each new ESC value
 
   //if THR is low disable PID and be sure that ESC receive Zero
-  printf("%f \n",RCinput[0]);
+  //printf("%f \n",RCinput[0]);
 
   if (RCinput[0] < 7.0) {
     for (int i=0;i<4;i++){
