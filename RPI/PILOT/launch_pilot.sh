@@ -83,17 +83,18 @@ function stop_pilot() {
 }
 
 function start_pilot() {
-rate_kp=1.4
-rate_ki=0.01
-rate_kd=0.02
+    rate_kp=1.5
+    rate_ki=0.003
+    rate_kd=0.0
 
-stab_kp=2.5
-stab_ki=0.01
-stab_kd=0.5
+    stab_kp=3.5
+    stab_ki=0.0
+    stab_kd=0.0
 
-yaw_rate=5.0
-( sudo /home/pi/QUADCOPTER_V2/RPI/PILOT/quad_pilot $rate_kp $rate_ki $rate_kd\
-       $stab_kp $stab_ki $stab_kd $yaw_rate > quad_pilot.log 2>&1 ) &
+    yaw_rate=7.0
+
+    ( sudo /home/pi/QUADCOPTER_V2/RPI/PILOT/quad_pilot $rate_kp $rate_ki $rate_kd \
+	$stab_kp $stab_ki $stab_kd $yaw_rate > quad_pilot.log 2>&1 ) &
 }
 
 

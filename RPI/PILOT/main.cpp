@@ -57,13 +57,21 @@ void Set_default_PID_config(){
   }
 }
 
-void Blink_led(){
+void Blink_led(int N){
   // use gpio to blink an led on pin 0
-  for(int i=0;i<30;i++){
+  for(int i=0;i<N;i++){
   system("/usr/local/bin/gpio write 0 0");
   usleep(50000);
   system("/usr/local/bin/gpio write 0 1");
   usleep(50000);
+  }
+}
+
+void Beep(int N){
+  // use gpio to blink an led on pin 0
+  for(int i=0;i<N;i++){
+  system("sudo /home/pi/QUADCOPTER_V2/RPI/BEEP/beep");
+  usleep(160000);
   }
 }
 
@@ -116,7 +124,8 @@ int main(int argc, char *argv[])
   }
 
   //Say I am ready
-  Blink_led();
+  Beep(3);
+  Blink_led(10);
 
   //Starting Timer
   Timer.start();

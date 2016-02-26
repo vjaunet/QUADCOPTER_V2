@@ -216,10 +216,10 @@ void TimerClass::sig_handler_(int signum)
     /cos(imu.ypr[PITCH]/180*M_PI);
 
   //output to logfile
-  logfile << imu.ypr[YAW] << " " << imu.ypr[PITCH] << " "
-	  << imu.ypr[ROLL] << " "
-	  << imu.gyro[YAW] << " " << imu.gyro[PITCH] << " "
-	  << imu.gyro[ROLL] << " ";
+  // logfile << imu.ypr[YAW] << " " << imu.ypr[PITCH] << " "
+  // 	  << imu.ypr[ROLL] << " "
+  // 	  << imu.gyro[YAW] << " " << imu.gyro[PITCH] << " "
+  // 	  << imu.gyro[ROLL] << " ";
 
 
 
@@ -295,8 +295,8 @@ void TimerClass::sig_handler_(int signum)
   //printf("%7.2f  %7.2f\n",imu.gyro[PITCH],Timer.PIDout[PITCH]);
   #endif
 
-  logfile << PIDout[YAW] << " " << PIDout[PITCH] << " "
-	  << PIDout[ROLL] << " ";
+  // logfile << PIDout[YAW] << " " << PIDout[PITCH] << " "
+  // 	  << PIDout[ROLL] << " ";
 
 
   //------------------------------------------------------
