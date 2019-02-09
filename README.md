@@ -1,6 +1,8 @@
 QUADCOPTER
 ==========
 
+A new version of the Quadcopter is available at: https://github.com/vjaunet/QUADCOPTER_V3
+
 A quadcopter controller on a Raspberry PI
 ------------------------------------------
 
